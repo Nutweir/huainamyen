@@ -207,6 +207,9 @@ footer { color: var(--muted); font-size: .85rem; padding-block: 0 40px; }
 <script>
 const FB = "https://www.facebook.com/search/top?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%95%E0%B8%81%E0%B8%AB%E0%B9%89%E0%B8%A7%E0%B8%A2%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B9%80%E0%B8%A2%E0%B9%87%E0%B8%99%20%E0%B8%9A%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B9%82%E0%B8%82%E0%B8%87";
 const BOOK = "https://huainamyen.netlify.app/";
+const STAY_PHONE = "0803852146";
+const STAY_PHONE_LABEL = "080-385-2146";
+const stayContact = () => `<a class="cta secondary" href="tel:${STAY_PHONE}">โทรหาลุงคาเด๊อะ · ${STAY_PHONE_LABEL}</a>`;
 // Embed URLs supplied by Google Maps for the three places, checked 2026-10-05.
 const tripPlaces = {
   omkoi: {
@@ -279,7 +282,8 @@ ${fig("misty-hills.jpg", "หมอกลอยเหนือภูเขา �
   {
     id: "stay", title: "ที่พัก: คาเด๊อะ โฮมสเตย์ บ้านนาเกียน", desc: "ทุ่งนา ความเงียบ สัญญาณโทรศัพท์ และทางช้างเผือก",
     facts: ["700 บาท รวมอาหารเช้า-เย็น", "หมูกระทะ 500 บาท", "มีสัญญาณโทรศัพท์"],
-    body: `<p>จริง ๆ แล้วเราเลือกพักโฮมสเตย์แถวบ้านแม่โขงที่อยู่ใกล้น้ำตกได้เลยนะครับ เหมาะสำหรับคนที่อยากสัมผัสวิถีชีวิตของชาวบ้านอย่างใกล้ชิด</p>
+    body: `<div class="callout"><p><b>ติดต่อที่พักกับลุงคาเด๊อะ</b></p><p>สอบถามห้องว่าง ราคา และจองคาเด๊อะ โฮมสเตย์ บ้านนาเกียนได้โดยตรง</p>${stayContact()}</div>
+<p>จริง ๆ แล้วเราเลือกพักโฮมสเตย์แถวบ้านแม่โขงที่อยู่ใกล้น้ำตกได้เลยนะครับ เหมาะสำหรับคนที่อยากสัมผัสวิถีชีวิตของชาวบ้านอย่างใกล้ชิด</p>
 <p>แต่สำหรับผม ผมเลือกพักที่<b>บ้านนาเกียน</b> และอยากแนะนำที่นี่มาก ๆ ช่วงที่ผมไป ทุ่งนากำลังสวยเลยครับ มองออกไปก็เจอวิวสีเขียวสบายตา บรรยากาศเงียบสงบ มีลมพัดผ่าน และที่สำคัญคือมีสัญญาณโทรศัพท์ด้วย</p>
 ${fig("sunset-field.jpg", "แดดเย็นหลังเมฆ มองจากหน้าโฮมสเตย์")}
 <p>หลังจากผ่านเส้นทางที่เหนื่อยมา 2–3 ชั่วโมง สิ่งที่ผมต้องการไม่ใช่สถานที่ที่มีกิจกรรมมากมาย แต่เป็นแค่ที่พักเงียบ ๆ สักแห่ง ให้ได้นั่งนิ่ง ๆ มองธรรมชาติ โดยไม่ต้องคิดถึงอะไร</p>
@@ -355,8 +359,9 @@ function timeline() {
   return `<h2 class="journey-day-title">${day.title}</h2><ol class="timeline">${day.stops.map((stop, i) => `<li class="${i === journeyStop ? "is-selected" : ""}" data-timeline-stop="${i}"><span class="timeline-dot" aria-hidden="true">${i + 1}</span><div class="stop-card"><span class="stop-time">${stop.time}</span><h3>${stop.title}</h3><p>${stop.detail}</p>${stop.image ? `<img src="img/${stop.image}" alt="${stop.imageAlt}" loading="lazy" width="360" height="120">` : ""}<div class="stop-actions">${stop.place ? `<button type="button" data-stop="${i}" aria-pressed="${i === journeyStop}" aria-controls="journey-map" aria-label="ดูแผนที่: ${stop.title}">ดูแผนที่ ↗</button>` : ""}<a href="#${stop.page}">อ่านรายละเอียด →</a></div></div></li>`).join("")}</ol>`;
 }
 function mapCard() {
-  const place = tripPlaces[tripDays[journeyDay].stops[journeyStop].place];
-  return `<div class="map-heading"><p class="eyebrow">จุดแวะบนแผนที่ / GOOGLE MAPS</p><h2 id="map-place-name" tabindex="-1">${place.name}</h2><p class="note">${place.area}</p></div><div class="map-frame"><iframe src="${place.embed}" title="แผนที่ ${place.name}" width="600" height="380" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="map-caption"><a class="cta" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(place.coordinates)}" target="_blank" rel="noopener">เปิดใน Google Maps ↗</a><p>แผนที่แสดงตำแหน่งสถานที่ เลือกจุดแวะในไทม์ไลน์เพื่อเปลี่ยนแผนที่ หากแผนที่ไม่แสดง ใช้ปุ่มด้านบนได้เลย</p></div>`;
+  const placeKey = tripDays[journeyDay].stops[journeyStop].place;
+  const place = tripPlaces[placeKey];
+  return `<div class="map-heading"><p class="eyebrow">จุดแวะบนแผนที่ / GOOGLE MAPS</p><h2 id="map-place-name" tabindex="-1">${place.name}</h2><p class="note">${place.area}</p></div><div class="map-frame"><iframe src="${place.embed}" title="แผนที่ ${place.name}" width="600" height="380" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="map-caption"><a class="cta" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(place.coordinates)}" target="_blank" rel="noopener">เปิดใน Google Maps ↗</a>${placeKey === "stay" ? `<div class="actions">${stayContact()}</div>` : ""}<p>แผนที่แสดงตำแหน่งสถานที่ เลือกจุดแวะในไทม์ไลน์เพื่อเปลี่ยนแผนที่ หากแผนที่ไม่แสดง ใช้ปุ่มด้านบนได้เลย</p></div>`;
 }
 function journey() {
   return `<a class="back" href="#home">← กลับหน้ารวม</a><div class="journey-heading"><p class="eyebrow">บันทึกเส้นทาง / 2 วัน 1 คืน</p><h1>จากเมือง สู่ทุ่งนา<br>แล้วเดินไปหาน้ำตก</h1><p class="lede">แผนทริปเสาร์–อาทิตย์จากเรื่องเล่าการเดินทาง เลือกวันและจุดแวะเพื่อดูสถานที่บนแผนที่</p></div>
@@ -418,8 +423,9 @@ function cost() {
   <div class="pager"><a href="#${last.id}"><small>ก่อนหน้า</small>← ${last.title}</a><a class="r" href="#home"><small>กลับ</small>หน้ารวม</a></div>`;
 }
 function linkPage() {
-  return `<h1>จองและติดต่อ</h1><p class="lede">ตรวจสอบข้อมูลกับผู้ให้บริการก่อนเดินทาง ลิงก์จะเปิดในแท็บใหม่</p>
+  return `<h1>จองและติดต่อ</h1><p class="lede">ตรวจสอบข้อมูลกับผู้ให้บริการก่อนเดินทาง แตะเบอร์เพื่อโทร หรือเปิดเว็บไซต์ในแท็บใหม่</p>
   <ul class="links">
+  <li><a href="tel:${STAY_PHONE}"><b>ลุงคาเด๊อะ · คาเด๊อะ โฮมสเตย์</b><small>สอบถามห้องว่างและจองที่พักบ้านนาเกียน</small><span class="host">โทร ${STAY_PHONE_LABEL}</span></a></li>
   <li><a href="${FB}" target="_blank" rel="noopener"><b>ค้นหาน้ำตกห้วยน้ำเย็นบน Facebook</b><small>เปิดผลการค้นหาเพื่อหาเพจและข่าวล่าสุดก่อนเดินทาง</small><span class="host">facebook.com ↗</span></a></li>
   <li><a href="${BOOK}" target="_blank" rel="noopener"><b>จองคิวน้ำตก</b><small>50 บาท/คน เลือกวันและเวลา และช่วยประสานหารถขึ้นบ้านแม่โขง</small><span class="host">huainamyen.netlify.app ↗</span></a></li>
   </ul>`;
