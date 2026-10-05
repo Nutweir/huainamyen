@@ -42,7 +42,7 @@ nav.top a { display: inline-flex; align-items: center; justify-content: center; 
 nav.top a[aria-current="page"] { background: var(--accent-soft); }
 nav.top a:hover, nav.top a[aria-current="page"] { color: var(--accent); }
 a { color: var(--accent); }
-a:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
 main { padding-block: 36px 64px; }
 h1, h2 { font-family: var(--display); line-height: 1.4; text-wrap: balance; margin: 0; }
 h1 { font-size: clamp(1.65rem, 5.5vw, 2.3rem); }
@@ -121,11 +121,54 @@ figcaption { color: var(--muted); font-size: .86rem; margin-top: 6px; line-heigh
 .budget-box label { display: block; margin-top: 16px; }
 .budget-box select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-height: 44px; padding: 6px 12px; margin-top: 6px; }
 .budget-box output { display: block; margin-top: 12px; font-weight: 600; }
+.journey-invite { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 24px; align-items: center; margin-top: 28px; padding: 24px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: 16px; }
+.journey-invite h3 { font-family: var(--display); font-size: 1.3rem; margin: 0; }
+.journey-invite p { margin-top: 8px; }
+.journey-invite img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; }
+.journey-heading { max-width: 720px; }
+.journey-days { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0; }
+.journey-days button { font: inherit; text-align: left; cursor: pointer; padding: 12px 20px; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); background: var(--surface); }
+.journey-days button span { display: block; font-size: .82rem; }
+.journey-days button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.journey-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 36px; align-items: start; }
+.journey-day-title { margin: 0 0 24px; }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 32px; }
+.timeline > li { position: relative; padding: 0 0 24px 20px; border-left: 1px solid var(--line); }
+.timeline > li:last-child { border-color: transparent; padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -17px; top: 0; display: grid; place-items: center; width: 32px; height: 32px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--line); border-radius: 50%; font-size: .82rem; font-weight: 600; }
+.timeline > li.is-selected .timeline-dot { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+.stop-card { padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.is-selected .stop-card { border-color: var(--accent); }
+.stop-time { color: var(--accent); font-size: .8rem; font-weight: 600; }
+.stop-card h3 { margin: 4px 0 0; font-size: 1.05rem; }
+.stop-card p { margin-top: 8px; color: var(--muted); font-size: .92rem; line-height: 1.7; }
+.stop-card img { display: block; width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-top: 14px; }
+.stop-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-top: 12px; }
+.stop-actions button, .stop-actions a { font: inherit; font-size: .86rem; min-height: 44px; display: inline-flex; align-items: center; padding: 6px 0; color: var(--accent); background: transparent; border: 0; text-decoration: none; cursor: pointer; }
+.stop-actions button { font-weight: 600; }
+.journey-map { position: sticky; top: 100px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; scroll-margin-top: 170px; }
+.map-heading { padding: 22px 24px 18px; }
+.map-heading h2 { margin: 4px 0 0; font-size: 1.25rem; }
+.map-heading p { margin-top: 4px; }
+.map-frame { background: var(--accent-soft); }
+.map-frame iframe { display: block; border: 0; width: 100%; height: 380px; }
+.map-caption { padding: 18px 24px 22px; }
+.map-caption .cta { width: 100%; margin-top: 0; }
+.map-caption p { font-size: .83rem; margin-top: 12px; color: var(--muted); }
+.journey-note { margin-top: 24px; font-size: .9rem; color: var(--muted); }
 .skip-link { position: fixed; top: 8px; left: 12px; padding: 10px 16px; background: var(--surface); z-index: 5; transform: translateY(-150%); }
 .skip-link:focus { transform: translateY(0); }
 #view:focus { outline: none; }
 footer { color: var(--muted); font-size: .85rem; padding-block: 0 40px; }
 @media (max-width: 760px) {
+  .journey-layout { grid-template-columns: 1fr; gap: 28px; }
+  .journey-map { position: static; }
+  .journey-invite { grid-template-columns: 1fr; }
+  .journey-invite img { display: none; }
+  .journey-days button { flex: 1 1 140px; padding: 10px 14px; }
+  .map-frame iframe { height: 300px; }
+  .stop-card { padding: 14px; }
+  .timeline { padding-left: 16px; }
   .hero-layout { grid-template-columns: 1fr; gap: 28px; }
   .hero { max-width: 380px; width: 100%; margin-inline: auto; }
   .hero-layout h1 { font-size: 2.2rem; }
@@ -151,7 +194,7 @@ footer { color: var(--muted); font-size: .85rem; padding-block: 0 40px; }
     <a class="brand" href="#home">ห้วยน้ำเย็น <span>บ้านแม่โขง</span></a>
     <nav class="top" aria-label="เมนูหลัก">
       <a href="#home" data-nav="home">ภาพรวม</a>
-      <a href="#omkoi" data-nav="omkoi">การเดินทาง</a>
+      <a href="#journey" data-nav="journey">แผนที่ทริป</a>
       <a href="#stay" data-nav="stay">ที่พัก</a>
       <a href="#cost" data-nav="cost">ค่าใช้จ่าย</a>
       <a href="#links" data-nav="links">จองและติดต่อ</a>
@@ -164,6 +207,43 @@ footer { color: var(--muted); font-size: .85rem; padding-block: 0 40px; }
 <script>
 const FB = "https://www.facebook.com/search/top?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%95%E0%B8%81%E0%B8%AB%E0%B9%89%E0%B8%A7%E0%B8%A2%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B9%80%E0%B8%A2%E0%B9%87%E0%B8%99%20%E0%B8%9A%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B9%82%E0%B8%82%E0%B8%87";
 const BOOK = "https://huainamyen.netlify.app/";
+// Embed URLs supplied by Google Maps for the three places, checked 2026-10-05.
+const tripPlaces = {
+  omkoi: {
+    name: "ที่ว่าการอำเภออมก๋อย", area: "จุดเริ่มต้นก่อนขึ้นหมู่บ้าน · อมก๋อย เชียงใหม่",
+    coordinates: "17.8008361,98.357976",
+    embed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3798.8054958380503!2d98.357976!3d17.800836099999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30dc83a232e4be73%3A0xabbfd9a0dec24e5a!2z4LiX4Li14LmI4Lin4LmI4Liy4LiB4Liy4Lij4Lit4Liz4LmA4Lig4Lit4Lit4Lih4LiB4LmL4Lit4Lii!5e0!3m2!1sth!2sth!4v1791182634262!5m2!1sth!2sth"
+  },
+  stay: {
+    name: "คาเด๊อะ โฮมสเตย์", area: "พักริมทุ่งนา · บ้านนาเกียน อมก๋อย",
+    coordinates: "17.7981339,98.1532171",
+    embed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3798.8630165943237!2d98.15321709999999!3d17.7981339!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30dc9f3359d3d6dd%3A0x595828dec876299c!2z4LiE4Liy4LmA4LiU4LmK4Lit4LiwIOC5guC4ruC4oeC4quC5gOC4leC4ouC5jA!5e0!3m2!1sth!2sth!4v1791182673998!5m2!1sth!2sth"
+  },
+  waterfall: {
+    name: "น้ำตกห้วยน้ำเย็น", area: "จุดหมายน้ำตก · บ้านแม่โขง ตำบลนาเกียน",
+    coordinates: "17.7576625,98.1534531",
+    embed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3799.7235056248173!2d98.1534531!3d17.757662499999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30dc99005c014231%3A0xa60f7beb2890fe42!2z4LiZ4LmJ4Liz4LiV4LiB4Lir4LmJ4Lin4Lii4LiZ4LmJ4Liz4LmA4Lii4LmH4LiZ!5e0!3m2!1sth!2sth!4v1791182553681!5m2!1sth!2sth"
+  }
+};
+const tripDays = [
+  {
+    title: "ค่อย ๆ เดินทางขึ้นไปพัก", label: "วันเสาร์", theme: "จากเมือง สู่ทุ่งนา", defaultStop: 0,
+    stops: [
+      { time: "เริ่มจากเชียงใหม่", title: "มาถึงอมก๋อย แล้วต่อรถขึ้นหมู่บ้าน", place: "omkoi", detail: "เดินทางมาที่ว่าการอำเภออมก๋อย ประสานจุดนัดพบกับคนขับก่อนต่อรถขึ้นบ้านแม่โขง ช่วงขึ้นหมู่บ้านใช้เวลาประมาณ 2–3 ชั่วโมง", page: "maekhong" },
+      { time: "ช่วงเย็น · พัก 1 คืน", title: "พักริมทุ่งนาที่บ้านนาเกียน", place: "stay", detail: "เข้าที่พักคาเด๊อะ โฮมสเตย์ พักผ่อน ชมทุ่งนา และกินมื้อเย็น ถ้าฟ้าเปิดก็มีโอกาสได้ดูดาวก่อนเข้านอน", image: "sunset-field.jpg", imageAlt: "แสงเย็นเหนือทุ่งนาหน้าโฮมสเตย์", page: "stay" }
+    ]
+  },
+  {
+    title: "ออกเดินไปหาน้ำตก", label: "วันอาทิตย์", theme: "จากทุ่งนา สู่สายน้ำ", defaultStop: 1,
+    stops: [
+      { time: "08.00–09.00 น. · ตามนัดรถ", title: "เช็กเอาต์ แล้วให้รถมารับ", place: "stay", detail: "กินอาหารเช้า เก็บสัมภาระ และเช็กเอาต์ก่อนขึ้นรถไปจุดเริ่มเดิน ยืนยันจุดลงทะเบียนกับคนขับและไกด์ล่วงหน้า", page: "waterfall" },
+      { time: "ช่วงเดินป่า · ไป–กลับ 12–13 กม.", title: "น้ำตกห้วยน้ำเย็น", place: "waterfall", detail: "เดินกับไกด์ผ่านป่าและลำธารไปถึงน้ำตก เผื่อเวลาแวะพักและถ่ายภาพ ระยะเวลาเดินขึ้นอยู่กับจังหวะของแต่ละกลุ่ม", image: "waterfall-rocks.jpg", imageAlt: "ลานหินและสายน้ำที่น้ำตกห้วยน้ำเย็น", page: "waterfall" },
+      { time: "หลังจบทริป · นัดหมายล่วงหน้า", title: "กลับจุดนัดรับ แล้วเดินทางกลับ", detail: "นัดเวลารับกลับกับคนขับให้เหมาะกับเวลาเดินจริง และเช็กว่าค่ารถที่ตกลงรวมขากลับแล้วหรือยัง", page: "cost" }
+    ]
+  }
+];
+let journeyDay = 0;
+let journeyStop = 0;
 const fig = (src, cap, cls = "tall") => `<figure class="${cls}"><img src="img/${src}" alt="${cap}" loading="lazy"><figcaption>${cap}</figcaption></figure>`;
 const gallery = (...items) => `<div class="gallery">${items.map(([s, c]) => fig(s, c, "")).join("")}</div>`;
 const ext = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text} ↗</a>`;
@@ -251,7 +331,7 @@ function home() {
     <div><dt>ค่าจองตามบันทึกทริป</dt><dd>50 บาท / คน</dd></div>
     <div><dt>การเดินทางขึ้นหมู่บ้าน</dt><dd>จอยรถ 2–3 ชม.</dd></div>
   </dl>
-  <div class="actions"><a class="cta" href="#omkoi">ดูแผนเดินทาง →</a><a class="cta secondary" href="${BOOK}" target="_blank" rel="noopener">จองคิวน้ำตก ↗</a></div>
+  <div class="actions"><a class="cta" href="#journey">ดูแผนเดินทาง →</a><a class="cta secondary" href="${BOOK}" target="_blank" rel="noopener">จองคิวน้ำตก ↗</a></div>
   <p class="note">แนะนำขึ้นวันเสาร์ เดินน้ำตกวันอาทิตย์ · เส้นทางขึ้นหมู่บ้านค่อนข้างลำบาก ควรวางแผนรถล่วงหน้า</p>
   ${shortcuts()}
   </div>
@@ -260,6 +340,7 @@ function home() {
   <section class="home-details" aria-labelledby="plan-title">
   <h2 id="plan-title">วางแผนทริปของคุณ</h2>
   <p class="section-lede">เริ่มจากการจองคิว แล้วค่อยเลือกการเดินทางและที่พัก อ่านตามลำดับหรือเลือกหัวข้อที่อยากรู้ได้เลย</p>
+  <div class="journey-invite"><div><p class="eyebrow">2 วัน 1 คืน / เสาร์–อาทิตย์</p><h3>ตามเส้นทาง จากเมืองถึงน้ำตก</h3><p class="note">ดูจุดแวะ ที่พัก และน้ำตกในไทม์ไลน์เดียว พร้อมแผนที่ Google Maps ของแต่ละสถานที่</p><a class="cta" href="#journey">เปิดแผนที่และไทม์ไลน์ →</a></div><img src="img/rice-cloud.jpg" alt="ทุ่งนาบ้านนาเกียนระหว่างทริป" loading="lazy" width="180" height="200"></div>
   <h2>เส้นทางทีละขั้น</h2>
   <ol class="steps">${steps.map((s, i) => `<li><a href="#${s.id}"><span class="n">${i + 1}</span><span class="t">${s.title}</span><span class="d">${s.desc}</span></a></li>`).join("")}
   <li><a href="#cost"><span class="n">${steps.length + 1}</span><span class="t">สรุปค่าใช้จ่าย</span><span class="d">ดูราคาแต่ละรายการและคำนวณค่าใช้จ่ายที่หารกัน</span></a></li></ol>
@@ -267,7 +348,42 @@ function home() {
   </section>`;
 }
 function shortcuts(current = "") {
-  return `<nav class="shortcuts" aria-label="เลือกหัวข้อในทริป">${[["booking", "จองคิว"], ["omkoi", "การเดินทาง"], ["stay", "ที่พัก"], ["waterfall", "เดินน้ำตก"], ["cost", "งบประมาณ"]].map(([id, label]) => `<a href="#${id}"${current === id ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>`;
+  return `<nav class="shortcuts" aria-label="เลือกหัวข้อในทริป">${[["journey", "แผนที่ทริป"], ["booking", "จองคิว"], ["omkoi", "การเดินทาง"], ["stay", "ที่พัก"], ["waterfall", "เดินน้ำตก"], ["cost", "งบประมาณ"]].map(([id, label]) => `<a href="#${id}"${current === id ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>`;
+}
+function timeline() {
+  const day = tripDays[journeyDay];
+  return `<h2 class="journey-day-title">${day.title}</h2><ol class="timeline">${day.stops.map((stop, i) => `<li class="${i === journeyStop ? "is-selected" : ""}" data-timeline-stop="${i}"><span class="timeline-dot" aria-hidden="true">${i + 1}</span><div class="stop-card"><span class="stop-time">${stop.time}</span><h3>${stop.title}</h3><p>${stop.detail}</p>${stop.image ? `<img src="img/${stop.image}" alt="${stop.imageAlt}" loading="lazy" width="360" height="120">` : ""}<div class="stop-actions">${stop.place ? `<button type="button" data-stop="${i}" aria-pressed="${i === journeyStop}" aria-controls="journey-map" aria-label="ดูแผนที่: ${stop.title}">ดูแผนที่ ↗</button>` : ""}<a href="#${stop.page}">อ่านรายละเอียด →</a></div></div></li>`).join("")}</ol>`;
+}
+function mapCard() {
+  const place = tripPlaces[tripDays[journeyDay].stops[journeyStop].place];
+  return `<div class="map-heading"><p class="eyebrow">จุดแวะบนแผนที่ / GOOGLE MAPS</p><h2 id="map-place-name" tabindex="-1">${place.name}</h2><p class="note">${place.area}</p></div><div class="map-frame"><iframe src="${place.embed}" title="แผนที่ ${place.name}" width="600" height="380" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="map-caption"><a class="cta" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(place.coordinates)}" target="_blank" rel="noopener">เปิดใน Google Maps ↗</a><p>แผนที่แสดงตำแหน่งสถานที่ เลือกจุดแวะในไทม์ไลน์เพื่อเปลี่ยนแผนที่ หากแผนที่ไม่แสดง ใช้ปุ่มด้านบนได้เลย</p></div>`;
+}
+function journey() {
+  return `<a class="back" href="#home">← กลับหน้ารวม</a><div class="journey-heading"><p class="eyebrow">บันทึกเส้นทาง / 2 วัน 1 คืน</p><h1>จากเมือง สู่ทุ่งนา<br>แล้วเดินไปหาน้ำตก</h1><p class="lede">แผนทริปเสาร์–อาทิตย์จากเรื่องเล่าการเดินทาง เลือกวันและจุดแวะเพื่อดูสถานที่บนแผนที่</p></div>
+  <div class="journey-days" role="group" aria-label="เลือกวันเดินทาง">${tripDays.map((day, i) => `<button type="button" data-day="${i}" aria-pressed="${i === journeyDay}" aria-controls="journey-timeline journey-map">วันที่ ${i + 1} · ${day.label}<span>${day.theme}</span></button>`).join("")}</div>
+  <div class="journey-layout"><section id="journey-timeline" aria-label="จุดแวะตามลำดับ">${timeline()}</section><section class="journey-map" id="journey-map" aria-labelledby="map-place-name">${mapCard()}</section></div>
+  <p class="journey-note">เวลาที่ระบุเป็นแนวทางจากทริปนี้ ปรับตามนัดรถและจังหวะการเดินของกลุ่ม พิกัดน้ำตกเป็นจุดหมายปลายทาง ไม่ใช่จุดจอดรถหรือจุดเริ่มเดิน โปรดยืนยันจุดนัดพบกับคนขับและไกด์ก่อนเดินทาง</p>
+  <div class="actions"><a class="cta" href="#booking">ดูวิธีจองคิว →</a><a class="cta secondary" href="#cost">วางแผนค่าใช้จ่าย →</a></div>`;
+}
+function selectJourneyDay(day) {
+  if (!Number.isInteger(day) || !tripDays[day]) return;
+  journeyDay = day;
+  journeyStop = tripDays[day].defaultStop;
+  document.querySelectorAll("[data-day]").forEach(button => button.setAttribute("aria-pressed", String(Number(button.dataset.day) === day)));
+  document.getElementById("journey-timeline").innerHTML = timeline();
+  document.getElementById("journey-map").innerHTML = mapCard();
+}
+function selectJourneyStop(index) {
+  const stop = tripDays[journeyDay].stops[index];
+  if (!stop || !stop.place) return;
+  journeyStop = index;
+  document.querySelectorAll("[data-timeline-stop]").forEach(item => item.classList.toggle("is-selected", Number(item.dataset.timelineStop) === index));
+  document.querySelectorAll("[data-stop]").forEach(button => button.setAttribute("aria-pressed", String(Number(button.dataset.stop) === index)));
+  document.getElementById("journey-map").innerHTML = mapCard();
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    document.getElementById("journey-map").scrollIntoView({ block: "start" });
+    document.getElementById("map-place-name").focus({ preventScroll: true });
+  }
 }
 function step(s) {
   const i = steps.indexOf(s), prev = steps[i - 1], next = steps[i + 1];
@@ -317,13 +433,13 @@ function updateSharedCost() {
 function render(moveFocus = false) {
   const requested = location.hash.slice(1) || "home";
   if (requested === "view" && view.innerHTML) { view.focus({ preventScroll: true }); return; }
-  const key = ["home", "cost", "links", ...steps.map(s => s.id)].includes(requested) ? requested : "home";
+  const key = ["home", "journey", "cost", "links", ...steps.map(s => s.id)].includes(requested) ? requested : "home";
   const s = steps.find(x => x.id === key);
-  view.classList.toggle("home-view", key === "home");
-  view.innerHTML = s ? step(s) : key === "cost" ? cost() : key === "links" ? linkPage() : home();
-  const navKey = key === "maekhong" ? "omkoi" : key === "booking" ? "links" : key;
+  view.classList.toggle("home-view", key === "home" || key === "journey");
+  view.innerHTML = s ? step(s) : key === "journey" ? journey() : key === "cost" ? cost() : key === "links" ? linkPage() : home();
+  const navKey = ["omkoi", "maekhong", "waterfall"].includes(key) ? "journey" : key === "booking" ? "links" : key;
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === navKey ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
-  document.title = s ? s.title + " · ห้วยน้ำเย็น" : key === "cost" ? "ค่าใช้จ่าย · ห้วยน้ำเย็น" : key === "links" ? "จองและติดต่อ · ห้วยน้ำเย็น" : "น้ำตกห้วยน้ำเย็น บ้านแม่โขง";
+  document.title = s ? s.title + " · ห้วยน้ำเย็น" : key === "journey" ? "แผนที่และไทม์ไลน์ทริป · ห้วยน้ำเย็น" : key === "cost" ? "ค่าใช้จ่าย · ห้วยน้ำเย็น" : key === "links" ? "จองและติดต่อ · ห้วยน้ำเย็น" : "น้ำตกห้วยน้ำเย็น บ้านแม่โขง";
   if (key === "cost") {
     document.getElementById("group-size").addEventListener("change", updateSharedCost);
     updateSharedCost();
@@ -334,6 +450,12 @@ function render(moveFocus = false) {
 document.querySelector(".skip-link").addEventListener("click", event => {
   event.preventDefault();
   view.focus();
+});
+view.addEventListener("click", event => {
+  const dayButton = event.target.closest("[data-day]");
+  const stopButton = event.target.closest("[data-stop]");
+  if (dayButton) selectJourneyDay(Number(dayButton.dataset.day));
+  if (stopButton) selectJourneyStop(Number(stopButton.dataset.stop));
 });
 window.addEventListener("hashchange", () => render(true));
 render();
