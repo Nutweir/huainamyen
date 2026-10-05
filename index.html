@@ -103,6 +103,12 @@ figcaption { color: var(--muted); font-size: .86rem; margin-top: 6px; line-heigh
 .hero img { width: 100%; height: auto; aspect-ratio: 788 / 1400; border-radius: 16px; }
 .hero-layout h1 { font-size: clamp(2rem, 3.5vw, 3rem); }
 .hero-layout h1 span { display: block; font-size: .62em; color: var(--muted); margin-top: 12px; }
+.film-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); align-items: center; gap: 36px; margin-top: 56px; padding: 32px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: 18px; }
+.film-section h2 { margin-top: 0; font-size: clamp(1.4rem, 3vw, 2rem); }
+.film-section figure { margin: 0; min-width: 0; width: 100%; max-width: 340px; justify-self: center; }
+.film-section video { display: block; width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: contain; background: #101b14; border-radius: 12px; }
+.film-section video:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+article .film-section { grid-template-columns: 1fr; gap: 24px; margin-top: 28px; }
 .trip-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0 0; padding-top: 20px; border-top: 1px solid var(--line); }
 .trip-summary div { min-width: 0; }
 .trip-summary dt { color: var(--muted); font-size: .85rem; }
@@ -161,6 +167,7 @@ figcaption { color: var(--muted); font-size: .86rem; margin-top: 6px; line-heigh
 #view:focus { outline: none; }
 footer { color: var(--muted); font-size: .85rem; padding-block: 0 40px; }
 @media (max-width: 760px) {
+  .film-section { grid-template-columns: 1fr; gap: 24px; padding: 22px; margin-top: 36px; }
   .journey-layout { grid-template-columns: 1fr; gap: 28px; }
   .journey-map { position: static; }
   .journey-invite { grid-template-columns: 1fr; }
@@ -250,6 +257,12 @@ let journeyStop = 0;
 const fig = (src, cap, cls = "tall") => `<figure class="${cls}"><img src="img/${src}" alt="${cap}" loading="lazy"><figcaption>${cap}</figcaption></figure>`;
 const gallery = (...items) => `<div class="gallery">${items.map(([s, c]) => fig(s, c, "")).join("")}</div>`;
 const ext = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text} ↗</a>`;
+function waterfallVideo(showStoryLink = false) {
+  return `<section class="film-section" aria-labelledby="waterfall-film-title">
+    <div><p class="eyebrow">บันทึกภาพเคลื่อนไหว / ประมาณ 8 วินาที</p><h2 id="waterfall-film-title">ให้น้ำตกเล่าเรื่อง<br>ด้วยตัวเอง</h2><p>สายน้ำที่ไหลลงมาตามหน้าผา ท่ามกลางป่าสีเขียว ลองหยุดพักแล้วชมบรรยากาศจากทริปนี้ด้วยกันครับ</p><p class="note">กดเล่นเพื่อชมคลิป และขยายเต็มจอได้</p>${showStoryLink ? '<a class="cta secondary" href="#waterfall">อ่านเรื่องวันเดินน้ำตก →</a>' : ""}</div>
+    <figure><video controls playsinline preload="none" poster="img/waterfall-video-poster.jpg" width="540" height="960" aria-label="วิดีโอน้ำตกห้วยน้ำเย็น" aria-describedby="waterfall-film-caption"><source src="video/waterfall.mp4" type="video/mp4">เบราว์เซอร์นี้ไม่รองรับวิดีโอ <a href="video/waterfall.mp4">เปิดคลิปน้ำตก</a></video><figcaption id="waterfall-film-caption">น้ำตกห้วยน้ำเย็น บ้านแม่โขง · ภาพจากการเดินทางจริง<br><a href="video/waterfall.mp4" download>ดาวน์โหลดคลิป</a></figcaption></figure>
+  </section>`;
+}
 
 const steps = [
   {
@@ -307,6 +320,7 @@ ${fig("goat.jpg", "น้องแพะที่จุดเริ่มเด�
 <p>ระยะเดินเท้าจากจุดเริ่มเดินไปน้ำตกแล้วกลับ รวมประมาณ 12–13 กิโลเมตร ไม่รวมระยะทางนั่งรถ เวลาที่ใช้ขึ้นอยู่กับร่างกายและจังหวะของแต่ละคน ผมเดินไป ถ่ายคลิปไป แวะชมวิวไปเรื่อย ๆ ใช้เวลาเกือบ 4 ชั่วโมง</p>
 <p>แต่แปลกดีนะครับ เป็น 4 ชั่วโมงที่ผมแทบไม่รู้สึกเหนื่อยเลย ระหว่างทางมีอะไรให้มองตลอด ทั้งป่า ต้นไม้ ลำธาร ยิ่งเดินลึกเข้าไป ก็ยิ่งรู้สึกว่าการตัดสินใจมาที่นี่คุ้มค่ามากขึ้น</p>
 <p class="quote">น้ำตกห้วยน้ำเย็นยังคงสวยงามเสมอ และสวยมากกว่าที่กล้องจะถ่ายทอดออกมาได้จริง ๆ ครับ</p>
+${waterfallVideo()}
 ${gallery(["waterfall.jpg", "น้ำตกห้วยน้ำเย็นจากมุมไกล"], ["waterfall-rocks.jpg", "ที่ลานหินหน้าน้ำตก"])}
 <h2>ค่าไกด์</h2>
 <p>ค่าไกด์ 350 บาทต่อกลุ่ม ไม่ว่าจะไปกันกี่คนก็หารกันได้ครับ</p>`
@@ -341,6 +355,7 @@ function home() {
   </div>
   <figure class="hero"><img src="img/waterfall.jpg" alt="สายน้ำตกห้วยน้ำเย็นไหลลงมาตามหน้าผาสูงกลางป่า" width="788" height="1400" fetchpriority="high"><figcaption>ปลายทางที่คุ้มกับทุกก้าวระหว่างทาง</figcaption></figure>
   </section>
+  ${waterfallVideo(true)}
   <section class="home-details" aria-labelledby="plan-title">
   <h2 id="plan-title">วางแผนทริปของคุณ</h2>
   <p class="section-lede">เริ่มจากการจองคิว แล้วค่อยเลือกการเดินทางและที่พัก อ่านตามลำดับหรือเลือกหัวข้อที่อยากรู้ได้เลย</p>
