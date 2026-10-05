@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="วางแผนเที่ยวน้ำตกห้วยน้ำเย็น บ้านแม่โขง อมก๋อย ทริป 2 วัน 1 คืน พร้อมเส้นทาง ที่พัก ค่าใช้จ่าย และลิงก์จองคิวจากประสบการณ์จริง">
 <title>น้ำตกห้วยน้ำเย็น บ้านแม่โขง</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
 <style>
-/* Layout: one narrow reading column; home = intro + numbered trip steps (a real sequence) + cost table; each step is its own page with prev/next */
+/* Spacious trip overview, with a narrow reading column for each journal entry. */
 :root {
   --bg: #f4f6f1;
   --surface: #ffffff;
@@ -33,14 +34,15 @@
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.8; }
 .wrap { max-width: 680px; margin: 0 auto; padding-inline: 20px; }
 header.bar { border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; }
-header.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; padding-block: 12px; flex-wrap: wrap; }
+header.bar .wrap { max-width: 1120px; display: flex; align-items: center; justify-content: space-between; gap: 4px 16px; padding-block: 8px; flex-wrap: wrap; }
 .brand { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; }
 .brand span { color: var(--accent); }
-nav.top { display: flex; gap: 16px; font-size: .92rem; }
-nav.top a { color: var(--muted); text-decoration: none; }
+nav.top { display: flex; gap: 4px; font-size: .92rem; flex-wrap: wrap; }
+nav.top a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 6px 10px; color: var(--muted); text-decoration: none; border-radius: 8px; }
+nav.top a[aria-current="page"] { background: var(--accent-soft); }
 nav.top a:hover, nav.top a[aria-current="page"] { color: var(--accent); }
 a { color: var(--accent); }
-a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+a:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
 main { padding-block: 36px 64px; }
 h1, h2 { font-family: var(--display); line-height: 1.4; text-wrap: balance; margin: 0; }
 h1 { font-size: clamp(1.65rem, 5.5vw, 2.3rem); }
@@ -73,9 +75,9 @@ td.amt { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 6
 td small { color: var(--muted); display: block; line-height: 1.5; }
 .note { color: var(--muted); font-size: .9rem; }
 
-.back { display: inline-block; margin-bottom: 20px; font-size: .92rem; text-decoration: none; }
+.back { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 20px; font-size: .92rem; text-decoration: none; }
 .pager { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: .93rem; }
-.pager a { text-decoration: none; line-height: 1.5; }
+.pager a { text-decoration: none; line-height: 1.5; min-height: 44px; padding-block: 8px; }
 .pager .r { text-align: right; }
 .pager small { display: block; color: var(--muted); }
 
@@ -85,7 +87,9 @@ td small { color: var(--muted); display: block; line-height: 1.5; }
 .links b { display: block; font-weight: 600; }
 .links small { color: var(--muted); font-size: .9rem; }
 .links .host { display: block; color: var(--accent); font-size: .82rem; margin-top: 4px; }
-.cta { display: inline-block; margin-top: 18px; background: var(--accent); color: var(--bg); padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+.cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 18px; background: var(--accent); color: var(--bg); padding: 10px 20px; border: 1px solid var(--accent); border-radius: 8px; text-decoration: none; font-weight: 600; }
+.cta:hover { filter: brightness(.94); }
+.cta.secondary { background: transparent; color: var(--accent); border-color: var(--line); }
 figure { margin: 1.6em 0 0; }
 figure img { display: block; width: 100%; max-width: 100%; border-radius: 10px; background: var(--accent-soft); }
 figure.tall img { aspect-ratio: 4 / 5; object-fit: cover; }
@@ -93,21 +97,64 @@ figcaption { color: var(--muted); font-size: .86rem; margin-top: 6px; line-heigh
 .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1.6em; }
 .gallery figure { margin: 0; min-width: 0; }
 .gallery img { aspect-ratio: 3 / 4; object-fit: cover; }
-.hero { margin: 0 0 28px; position: relative; }
-.hero img { aspect-ratio: 16 / 11; object-fit: cover; object-position: center 40%; }
+.home-view { max-width: 1120px; }
+.hero-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .85fr); gap: 56px; align-items: center; }
+.hero { margin: 0; }
+.hero img { width: 100%; height: auto; aspect-ratio: 788 / 1400; border-radius: 16px; }
+.hero-layout h1 { font-size: clamp(2rem, 3.5vw, 3rem); }
+.hero-layout h1 span { display: block; font-size: .62em; color: var(--muted); margin-top: 12px; }
+.trip-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0 0; padding-top: 20px; border-top: 1px solid var(--line); }
+.trip-summary div { min-width: 0; }
+.trip-summary dt { color: var(--muted); font-size: .85rem; }
+.trip-summary dd { margin: 2px 0 0; font-size: 1.08rem; font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.actions .cta { margin: 0; }
+.shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.shortcuts a { display: inline-flex; align-items: center; min-height: 44px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .9rem; }
+.shortcuts a:hover, .shortcuts a[aria-current="page"] { background: var(--accent-soft); }
+.home-details { max-width: 760px; margin: 56px auto 0; }
+.home-details h2:first-child { margin-top: 0; }
+.section-lede { color: var(--muted); margin-top: 8px; }
+.steps .t::after { content: " →"; color: var(--accent); }
+.budget-box { margin-top: 24px; padding: 22px; background: var(--accent-soft); border-radius: 12px; }
+.budget-box h2 { margin-top: 0; }
+.budget-box label { display: block; margin-top: 16px; }
+.budget-box select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-height: 44px; padding: 6px 12px; margin-top: 6px; }
+.budget-box output { display: block; margin-top: 12px; font-weight: 600; }
+.skip-link { position: fixed; top: 8px; left: 12px; padding: 10px 16px; background: var(--surface); z-index: 5; transform: translateY(-150%); }
+.skip-link:focus { transform: translateY(0); }
+#view:focus { outline: none; }
 footer { color: var(--muted); font-size: .85rem; padding-block: 0 40px; }
-@media (max-width: 480px) { body { font-size: 16px; } }
+@media (max-width: 760px) {
+  .hero-layout { grid-template-columns: 1fr; gap: 28px; }
+  .hero { max-width: 380px; width: 100%; margin-inline: auto; }
+  .hero-layout h1 { font-size: 2.2rem; }
+  .home-details { margin-top: 36px; }
+  header.bar .wrap { justify-content: center; }
+  nav.top { justify-content: center; }
+}
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  main { padding-top: 24px; }
+  nav.top { font-size: .85rem; gap: 0; }
+  nav.top a { padding-inline: 8px; }
+  .actions .cta { flex: 1 1 140px; }
+  .trip-summary { gap: 12px; }
+}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#view">ข้ามไปเนื้อหา</a>
 
 <header class="bar">
   <div class="wrap">
     <a class="brand" href="#home">ห้วยน้ำเย็น <span>บ้านแม่โขง</span></a>
-    <nav class="top">
-      <a href="#home" data-nav="home">เส้นทาง</a>
+    <nav class="top" aria-label="เมนูหลัก">
+      <a href="#home" data-nav="home">ภาพรวม</a>
+      <a href="#omkoi" data-nav="omkoi">การเดินทาง</a>
+      <a href="#stay" data-nav="stay">ที่พัก</a>
       <a href="#cost" data-nav="cost">ค่าใช้จ่าย</a>
-      <a href="#links" data-nav="links">ลิงก์</a>
+      <a href="#links" data-nav="links">จองและติดต่อ</a>
     </nav>
   </div>
 </header>
@@ -125,11 +172,11 @@ const steps = [
   {
     id: "booking", title: "การจองคิวไปน้ำตก", desc: "ดูข้อมูลที่เพจ แล้วจองคิวผ่านเว็บไซต์ 50 บาท/คน",
     facts: ["ค่าจอง 50 บาท/คน", "เลือกวันและเวลาได้"],
-    body: `<p>อันดับแรก แนะนำให้เข้าไปดูข้อมูลที่เพจ ${ext(FB, "น้ำตกห้วยน้ำเย็น บ้านแม่โขง")} ก่อนครับ</p>
+    body: `<a class="cta" href="${BOOK}" target="_blank" rel="noopener">ไปหน้าจองคิว ↗</a>
+<p>อันดับแรก แนะนำให้ค้นหาข่าวล่าสุดของ ${ext(FB, "น้ำตกห้วยน้ำเย็น บ้านแม่โขง บน Facebook")} ก่อนครับ</p>
 <p>จากนั้นเข้าไปจองคิวผ่านเว็บไซต์ ${ext(BOOK, "huainamyen.netlify.app")} ค่าจอง 50 บาท/คน สามารถเลือกวันและเวลาที่ต้องการเดินทางได้เลย</p>
 <div class="callout"><p><b>คำแนะนำ:</b> ส่วนตัวผมแนะนำให้เลือกไปน้ำตกใน<b>วันอาทิตย์</b> แล้วเดินทางขึ้นไปพักตั้งแต่วันเสาร์ เพราะจะได้มีเวลาใช้ชีวิตช้า ๆ พักผ่อน ชมวิว และเก็บบรรยากาศระหว่างทางได้เต็มที่ โดยไม่ต้องรีบร้อนครับ</p></div>
-${fig("rice-cloud.jpg", "ทุ่งนาบ้านนาเกียน ช่วงเย็นวันเสาร์")}
-<a class="cta" href="${BOOK}" target="_blank" rel="noopener">ไปหน้าจองคิว ↗</a>`
+${fig("rice-cloud.jpg", "ทุ่งนาบ้านนาเกียน ช่วงเย็นวันเสาร์")}`
   },
   {
     id: "omkoi", title: "เชียงใหม่ → อำเภออมก๋อย", desc: "รถตู้ไม่เกิน 300 บาท/คน หรือขับรถไปเองแล้วหารค่าน้ำมัน",
@@ -185,8 +232,8 @@ ${gallery(["waterfall.jpg", "น้ำตกห้วยน้ำเย็นจ
 const costs = [
   ["ค่าจองน้ำตก", "50 บาท", "ต่อคน"],
   ["เชียงใหม่ → อมก๋อย", "200 กว่าบาท", "ต่อคน หารค่าน้ำมัน · หรือรถตู้ไม่เกิน 300 บาท/คน"],
-  ["รถขึ้นบ้านแม่โขง", "300 กว่าบาท", "ต่อคน กรณีจอยรถ"],
-  ["ที่พัก คาเด๊อะ โฮมสเตย์", "700 บาท", "รวมอาหารเช้าและเย็น"],
+  ["รถขึ้นบ้านแม่โขง", "300 กว่าบาท", "ต่อคน กรณีจอยรถ · สอบถามว่ารวมขากลับหรือไม่"],
+  ["ที่พัก คาเด๊อะ โฮมสเตย์", "700 บาท", "รวมอาหารเช้าและเย็น · สอบถามหน่วยราคาและจำนวนผู้เข้าพักก่อนจอง"],
   ["ชุดหมูกระทะ", "500 บาท", "ต่อชุด แยกจากค่าที่พัก"],
   ["ค่าไกด์", "350 บาท", "ต่อกลุ่ม หารกันได้"]
 ];
@@ -194,15 +241,33 @@ const costs = [
 const view = document.getElementById("view");
 
 function home() {
-  return `<figure class="hero"><img src="img/waterfall.jpg" alt="น้ำตกห้วยน้ำเย็น บ้านแม่โขง"></figure>
-  <div class="intro"><p class="eyebrow">อมก๋อย · เชียงใหม่</p>
-  <h1>น้ำตกห้วยน้ำเย็น บ้านแม่โขง 🌿</h1>
-  <p class="lede">รายละเอียดการเดินทาง ค่าใช้จ่าย และที่พัก สำหรับคนที่อยากออกไปสัมผัสธรรมชาติสักครั้ง</p>
-  <p>เผื่อใครกำลังวางแผนอยากไป แต่ยังไม่รู้ว่าต้องเริ่มจากตรงไหน จองยังไง พักที่ไหนดี หรือมีค่าใช้จ่ายอะไรบ้าง บอกไว้ก่อนเลยว่าการเดินทางครั้งนี้อาจไม่ได้สะดวกสบายที่สุด แต่ระหว่างทางและสิ่งที่ได้เจอ มันคุ้มค่ามากจริง ๆ ครับ</p>
-  <ul class="facts"><li>แนะนำ: ขึ้นวันเสาร์ เดินน้ำตกวันอาทิตย์</li><li>เดินป่า 12–13 กม.</li></ul></div>
+  return `<section class="hero-layout" aria-labelledby="trip-title">
+  <div class="intro"><p class="eyebrow">อมก๋อย · เชียงใหม่ / บันทึกจากการเดินทางจริง</p>
+  <h1 id="trip-title">น้ำตกห้วยน้ำเย็น<span>บ้านแม่โขง</span></h1>
+  <p class="lede">เดินเข้าป่าไปเจอน้ำตก พักริมทุ่งนา แล้วให้ธรรมชาติค่อย ๆ เติมพลังให้เรา</p>
+  <dl class="trip-summary">
+    <div><dt>แผนทริปแนะนำ</dt><dd>2 วัน 1 คืน</dd></div>
+    <div><dt>ระยะเดินไป–กลับ</dt><dd>12–13 กม.</dd></div>
+    <div><dt>ค่าจองตามบันทึกทริป</dt><dd>50 บาท / คน</dd></div>
+    <div><dt>การเดินทางขึ้นหมู่บ้าน</dt><dd>จอยรถ 2–3 ชม.</dd></div>
+  </dl>
+  <div class="actions"><a class="cta" href="#omkoi">ดูแผนเดินทาง →</a><a class="cta secondary" href="${BOOK}" target="_blank" rel="noopener">จองคิวน้ำตก ↗</a></div>
+  <p class="note">แนะนำขึ้นวันเสาร์ เดินน้ำตกวันอาทิตย์ · เส้นทางขึ้นหมู่บ้านค่อนข้างลำบาก ควรวางแผนรถล่วงหน้า</p>
+  ${shortcuts()}
+  </div>
+  <figure class="hero"><img src="img/waterfall.jpg" alt="สายน้ำตกห้วยน้ำเย็นไหลลงมาตามหน้าผาสูงกลางป่า" width="788" height="1400" fetchpriority="high"><figcaption>ปลายทางที่คุ้มกับทุกก้าวระหว่างทาง</figcaption></figure>
+  </section>
+  <section class="home-details" aria-labelledby="plan-title">
+  <h2 id="plan-title">วางแผนทริปของคุณ</h2>
+  <p class="section-lede">เริ่มจากการจองคิว แล้วค่อยเลือกการเดินทางและที่พัก อ่านตามลำดับหรือเลือกหัวข้อที่อยากรู้ได้เลย</p>
   <h2>เส้นทางทีละขั้น</h2>
   <ol class="steps">${steps.map((s, i) => `<li><a href="#${s.id}"><span class="n">${i + 1}</span><span class="t">${s.title}</span><span class="d">${s.desc}</span></a></li>`).join("")}
-  <li><a href="#cost"><span class="n">${steps.length + 1}</span><span class="t">สรุปค่าใช้จ่าย</span><span class="d">รวมทุกรายการไว้ในตารางเดียว</span></a></li></ol>`;
+  <li><a href="#cost"><span class="n">${steps.length + 1}</span><span class="t">สรุปค่าใช้จ่าย</span><span class="d">ดูราคาแต่ละรายการและคำนวณค่าใช้จ่ายที่หารกัน</span></a></li></ol>
+  <div class="callout"><p><b>ก่อนออกเดินทาง</b></p><p>ตรวจสอบการเปิดเส้นทาง สภาพอากาศ และราคากับผู้ให้บริการอีกครั้ง ตัวเลขในบันทึกนี้มาจากทริปที่ผ่านมา</p><a class="back" href="#links">ดูช่องทางจองและติดต่อ →</a></div>
+  </section>`;
+}
+function shortcuts(current = "") {
+  return `<nav class="shortcuts" aria-label="เลือกหัวข้อในทริป">${[["booking", "จองคิว"], ["omkoi", "การเดินทาง"], ["stay", "ที่พัก"], ["waterfall", "เดินน้ำตก"], ["cost", "งบประมาณ"]].map(([id, label]) => `<a href="#${id}"${current === id ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>`;
 }
 function step(s) {
   const i = steps.indexOf(s), prev = steps[i - 1], next = steps[i + 1];
@@ -210,41 +275,67 @@ function step(s) {
   return `<a class="back" href="#home">← กลับหน้ารวม</a>
   <article><p class="eyebrow">ขั้นที่ ${i + 1} จาก ${steps.length + 1}</p><h1>${s.title}</h1>
   <ul class="facts">${s.facts.map(f => `<li>${f}</li>`).join("")}</ul>${s.body}</article>
-  <div class="pager">${prev ? `<a href="#${prev.id}"><small>ก่อนหน้า</small>← ${prev.title}</a>` : "<span></span>"}${nextLink}</div>`;
+  <div class="pager">${prev ? `<a href="#${prev.id}"><small>ก่อนหน้า</small>← ${prev.title}</a>` : "<span></span>"}${nextLink}</div>${shortcuts(s.id)}`;
 }
 function cost() {
   const last = steps[steps.length - 1];
   return `<a class="back" href="#home">← กลับหน้ารวม</a>
   <article><p class="eyebrow">ขั้นที่ ${steps.length + 1} จาก ${steps.length + 1}</p><h1>สรุปค่าใช้จ่าย</h1>
-  <div class="table-wrap"><table><thead><tr><th>รายการ</th><th>ราคา</th></tr></thead><tbody>
+  <p class="lede">แยกราคาต่อคนและรายการที่หารกัน เพื่อวางแผนงบให้เหมาะกับกลุ่มของคุณ</p>
+  <div class="callout"><p><b>ก่อนรวมงบ:</b> ยืนยันว่าค่าที่พัก 700 บาทคิดต่อคนหรือต่อห้อง และค่ารถรวมไป–กลับหรือไม่ แล้วเผื่องบอาหารระหว่างทางและค่าใช้จ่ายส่วนตัวเพิ่มเติม</p></div>
+  <div class="table-wrap"><table><thead><tr><th scope="col">รายการ</th><th scope="col">ราคา</th></tr></thead><tbody>
   ${costs.map(c => `<tr><td>${c[0]}<small>${c[2]}</small></td><td class="amt">${c[1]}</td></tr>`).join("")}
   </tbody></table></div>
   <p class="note">ราคาทั้งหมดเป็นค่าใช้จ่ายจากช่วงที่ผมเดินทางไปนะครับ แนะนำให้ตรวจสอบราคาและรายละเอียดอีกครั้งก่อนจอง</p>
+  <section class="budget-box" aria-labelledby="shared-title">
+  <h2 id="shared-title">ลองหารค่าใช้จ่ายในกลุ่ม</h2>
+  <p class="note">คำนวณเฉพาะไกด์ 1 กลุ่ม และหมูกระทะ 1 ชุด (ถ้าเลือกสั่ง) จากราคาในบันทึก ไม่ใช่งบรวมทั้งทริป</p>
+  <label for="group-size">จำนวนคนที่ร่วมหาร</label>
+  <select id="group-size">${Array.from({length: 10}, (_, i) => `<option value="${i + 1}"${i === 3 ? " selected" : ""}>${i + 1} คน</option>`).join("")}</select>
+  <output id="shared-cost" for="group-size" aria-live="polite"></output>
+  </section>
+  <a class="cta" href="${BOOK}" target="_blank" rel="noopener">จองคิวน้ำตก ↗</a>
   <h2>ท้ายทริป</h2>
   <p>ผมอยากให้ทุกคนได้ลองไปสัมผัสน้ำตกห้วยน้ำเย็นด้วยตัวเองสักครั้งครับ เพราะบางสถานที่ ต่อให้ถ่ายรูปสวยแค่ไหน ก็ยังถ่ายทอดความรู้สึกตอนที่ได้ยืนอยู่ตรงนั้นจริง ๆ ออกมาได้ไม่หมด</p>
   <p>ทริปนี้ไม่ได้มีดีแค่ความสวยของน้ำตก แต่ยังมีความสุขเล็ก ๆ ระหว่างทาง ทั้งทุ่งนา แสงแดดยามเย็น ท้องฟ้าที่เต็มไปด้วยดวงดาว และช่วงเวลาที่ได้อยู่กับตัวเองท่ามกลางธรรมชาติ</p>
-  <p class="quote">อย่ามัวแต่รอให้ทุกอย่างพร้อม แล้วค่อยออกเดินทางนะครับ แล้วอย่าลืมออกไปใช้ชีวิตกันนะครับ 🌿</p>
-  <a class="cta" href="${BOOK}" target="_blank" rel="noopener">จองคิวน้ำตก ↗</a></article>
+  <p class="quote">อย่ามัวแต่รอให้ทุกอย่างพร้อม แล้วค่อยออกเดินทางนะครับ แล้วอย่าลืมออกไปใช้ชีวิตกันนะครับ 🌿</p></article>
   <div class="pager"><a href="#${last.id}"><small>ก่อนหน้า</small>← ${last.title}</a><a class="r" href="#home"><small>กลับ</small>หน้ารวม</a></div>`;
 }
 function linkPage() {
-  return `<h1>ลิงก์ที่ใช้</h1><p class="lede">กดแล้วจะเปิดในแท็บใหม่</p>
+  return `<h1>จองและติดต่อ</h1><p class="lede">ตรวจสอบข้อมูลกับผู้ให้บริการก่อนเดินทาง ลิงก์จะเปิดในแท็บใหม่</p>
   <ul class="links">
-  <li><a href="${FB}" target="_blank" rel="noopener"><b>เพจ น้ำตกห้วยน้ำเย็น บ้านแม่โขง</b><small>ดูข้อมูลและข่าวล่าสุดก่อนเดินทาง</small><span class="host">facebook.com ↗</span></a></li>
+  <li><a href="${FB}" target="_blank" rel="noopener"><b>ค้นหาน้ำตกห้วยน้ำเย็นบน Facebook</b><small>เปิดผลการค้นหาเพื่อหาเพจและข่าวล่าสุดก่อนเดินทาง</small><span class="host">facebook.com ↗</span></a></li>
   <li><a href="${BOOK}" target="_blank" rel="noopener"><b>จองคิวน้ำตก</b><small>50 บาท/คน เลือกวันและเวลา และช่วยประสานหารถขึ้นบ้านแม่โขง</small><span class="host">huainamyen.netlify.app ↗</span></a></li>
   </ul>`;
 }
 
-function render() {
-  const key = location.hash.slice(1) || "home";
+function updateSharedCost() {
+  const count = Number(document.getElementById("group-size").value);
+  const money = value => value.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById("shared-cost").textContent = `ไกด์ ${money(350 / count)} บาท/คน · หมูกระทะ ${money(500 / count)} บาท/คน · รวมสองรายการ ${money(850 / count)} บาท/คน`;
+}
+function render(moveFocus = false) {
+  const requested = location.hash.slice(1) || "home";
+  if (requested === "view" && view.innerHTML) { view.focus({ preventScroll: true }); return; }
+  const key = ["home", "cost", "links", ...steps.map(s => s.id)].includes(requested) ? requested : "home";
   const s = steps.find(x => x.id === key);
+  view.classList.toggle("home-view", key === "home");
   view.innerHTML = s ? step(s) : key === "cost" ? cost() : key === "links" ? linkPage() : home();
-  const navKey = s ? "home" : key;
+  const navKey = key === "maekhong" ? "omkoi" : key === "booking" ? "links" : key;
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === navKey ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
-  document.title = s ? s.title + " · ห้วยน้ำเย็น" : "น้ำตกห้วยน้ำเย็น บ้านแม่โขง";
+  document.title = s ? s.title + " · ห้วยน้ำเย็น" : key === "cost" ? "ค่าใช้จ่าย · ห้วยน้ำเย็น" : key === "links" ? "จองและติดต่อ · ห้วยน้ำเย็น" : "น้ำตกห้วยน้ำเย็น บ้านแม่โขง";
+  if (key === "cost") {
+    document.getElementById("group-size").addEventListener("change", updateSharedCost);
+    updateSharedCost();
+  }
+  if (moveFocus) view.focus({ preventScroll: true });
   window.scrollTo(0, 0);
 }
-window.addEventListener("hashchange", render);
+document.querySelector(".skip-link").addEventListener("click", event => {
+  event.preventDefault();
+  view.focus();
+});
+window.addEventListener("hashchange", () => render(true));
 render();
 </script>
 </body>
