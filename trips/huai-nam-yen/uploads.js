@@ -44,6 +44,15 @@
         "fill": {
           "?น้องแพะ 5 วัน": "r0012050"
         }
+      },
+      "d1-afternoon:video:video/rice-walk.mp4": {
+        "video": {
+          "caption": "เดินถ่ายกลางทุ่งนา ประมาณ 15 วินาที",
+          "src": "video/dji-mimo-14831003-173542-20261003173542-.mov",
+          "w": 1728,
+          "h": 3072,
+          "poster": "video/dji-mimo-14831003-173542-20261003173542--poster-muwi7zxy.jpg"
+        }
       }
     }
   }
