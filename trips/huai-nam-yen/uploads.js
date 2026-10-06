@@ -13,6 +13,9 @@
     "images": {
       "milkyway": {
         "src": "day-01/milkyway-2.jpg"
+      },
+      "uncle-phue-lue": {
+        "caption": "ลุงพือลือ กับพี่เก่ง"
       }
     },
     "blocks": {}
