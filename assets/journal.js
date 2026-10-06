@@ -465,13 +465,30 @@
 
   /* ---------- boot ---------- */
 
+  // Photos added through admin.html live in trips/<slug>/uploads.js; fold them into the trip before rendering.
+  function mergeUploads(T) {
+    const U = (window.JOURNAL_UPLOADS || {})[T.slug];
+    if (!U) return T;
+    T.images = { ...T.images, ...(U.images || {}) };
+    T.gallery = [...(T.gallery || []), ...(U.gallery || []).filter(k => !(T.gallery || []).includes(k))];
+    (U.placements || []).forEach(p => {
+      const [kind, id] = p.target.startsWith("chapter:") ? ["chapter", p.target.slice(8)] : ["event", p.target];
+      const host = kind === "chapter" ? T.chapters.find(c => c.id === id) : T.chapters.flatMap(c => c.events).find(e => e.id === id);
+      if (!host) return;
+      const list = p.as === "decoration" ? "decorations" : "images";
+      (host[list] ||= []).push(p.block);
+    });
+    return T;
+  }
+
   function boot() {
     window.JournalImages.setupFallbacks();
     const trips = window.JOURNAL_TRIPS || [];
     const page = document.body.dataset.page;
-    if (page === "journeys") return renderJourneys(trips);
+    if (page === "journeys") return renderJourneys(trips.map(mergeUploads));
     const slug = new URLSearchParams(location.search).get("trip") || document.body.dataset.trip;
     const trip = trips.find(t => t.slug === slug);
+    if (trip) mergeUploads(trip);
     if (!trip) {
       document.getElementById("journal").innerHTML = `<p class="flow">ไม่พบบันทึกนี้ · <a href="journeys.html">ดูบันทึกทั้งหมด</a></p>`;
       return;

@@ -245,6 +245,7 @@ figcaption .hand { font-size: 1.1rem; }
 .ph--polaroid img { aspect-ratio: 1 / 1; object-fit: cover; }
 .ph--polaroid figcaption { justify-content: center; padding: .55rem 0 .8rem; margin: 0; }
 .ph--polaroid figcaption .hand { color: #5a4630; font-size: 1.05rem; }
+.ph--polaroid .ph-meta, .ph--diary-photo .ph-meta { flex-basis: 100%; text-align: center; letter-spacing: .14em; color: #7d6f5c; }
 
 /* diary-photo: a small print held on with a strip of tape */
 .ph--diary-photo { grid-column: wide; justify-self: center; position: relative; width: min(70%, var(--w, 240px)); background: var(--polaroid); padding: 6px; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 8px 20px -12px rgb(0 0 0 / .35); transform: rotate(var(--tilt, -2deg)); margin: 2.75rem 0 2.25rem; }

@@ -15,7 +15,11 @@ window.JournalImages = (() => {
   const warn = msg => { if (DEV && !warned.has(msg)) { warned.add(msg); console.warn("[journal]", msg); } };
   const attr = s => String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const stampDate = s => { const [y, m, d] = s.split("-").map(Number); return `${String(d).padStart(2, "0")} ${MONTHS[m - 1]} ${y}`; };
+  // "2026-10-03" → "03 Oct 2026"; anything else (missing, malformed) → "" so a bad date never breaks the page.
+  const stampDate = s => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+    return m && MONTHS[m[2] - 1] ? `${m[3]} ${MONTHS[m[2] - 1]} ${m[1]}` : "";
+  };
 
   // Smaller copies made by tools/prepare_images.py, by longest edge in px.
   const VARIANTS = [500, 1000];
@@ -46,7 +50,8 @@ window.JournalImages = (() => {
 
   function create(T) {
     const base = T.base || "";
-    const sizes = (window.JOURNAL_IMAGE_SIZES || {})[T.slug] || {};
+    // Sizes from tools/prepare_images.py, plus photos added through admin.html.
+    const sizes = { ...((window.JOURNAL_IMAGE_SIZES || {})[T.slug] || {}), ...(((window.JOURNAL_UPLOADS || {})[T.slug] || {}).sizes || {}) };
     const url = p => /^(https?:)?\/\//.test(p) || p.startsWith("/") ? p : base + p;
     let tiltTurn = 0;
 

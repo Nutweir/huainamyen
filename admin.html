@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin · อัปโหลดรูป</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600&family=Sriracha&display=swap">
+<link rel="stylesheet" href="assets/journal.css">
+<style>
+/* Admin is a working tool: same paper and type as the journal, plainer layout. */
+body { --text: 760px; }
+.admin { padding: 2.5rem 0 5rem; }
+.admin h1 { font-family: var(--f-display); font-size: clamp(1.6rem, 5vw, 2.2rem); line-height: 1.4; margin-bottom: .4rem; }
+.admin h2 { font-family: var(--f-display); font-size: 1.25rem; margin: 0 0 1rem; }
+.admin .lede { color: var(--muted); margin-bottom: 2rem; }
+.card { border: 1px solid var(--rule); background: color-mix(in srgb, var(--polaroid) 55%, var(--page)); padding: 1.25rem; margin: 0 0 1.5rem; border-radius: 6px; }
+.field { display: grid; gap: .35rem; margin: 0 0 1rem; }
+.field > span, .field legend { font-size: .9rem; font-weight: 500; }
+.field small, .hint { font-size: .82rem; color: var(--muted); line-height: 1.6; }
+input[type="text"], input[type="password"], input[type="date"], input[type="time"], select, textarea {
+  font: inherit; font-size: 1rem; color: var(--ink); background: var(--page); border: 1px solid var(--rule); border-radius: 4px; min-height: 44px; padding: .5rem .7rem; width: 100%; }
+textarea { min-height: 70px; resize: vertical; }
+fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
+.choices { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+.choices label, .check { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; cursor: pointer; }
+.choices input, .check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.btn { font: inherit; font-weight: 600; min-height: 48px; padding: 0 1.4rem; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--page); cursor: pointer; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); font-weight: 500; }
+.btn.small { min-height: 40px; padding: 0 1rem; font-size: .9rem; }
+.row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.grid2 { display: grid; gap: 0 1rem; grid-template-columns: 1fr 1fr; }
+.status { font-size: .92rem; }
+.status.ok { color: var(--accent); }
+.status.err { color: #a2412b; }
+.drop { display: grid; place-items: center; text-align: center; gap: .3rem; min-height: 140px; padding: 1.25rem; border: 1.5px dashed var(--rule); border-radius: 6px; cursor: pointer; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.files { display: grid; gap: 1rem; margin: 1rem 0; }
+.file { display: grid; grid-template-columns: 96px 1fr; gap: 1rem; padding: 1rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--page); }
+.file img { width: 96px; height: 120px; object-fit: cover; background: var(--rule); }
+.file .field { margin-bottom: .6rem; }
+.file-head { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; font-size: .82rem; color: var(--muted); margin-bottom: .5rem; word-break: break-all; }
+.file-head button { font: inherit; font-size: .85rem; background: none; border: 0; color: #a2412b; cursor: pointer; min-height: 32px; }
+.log { list-style: none; margin: 1rem 0 0; padding: 0; font-size: .9rem; }
+.log li { padding: .2rem 0; }
+.log li.err { color: #a2412b; }
+.log li.done { color: var(--accent); font-weight: 600; }
+.uploads { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.uploads li { display: grid; grid-template-columns: auto 1fr auto; gap: .9rem; align-items: center; padding: .75rem; border: 1px solid var(--rule); border-radius: 6px; }
+.uploads .thumbs { display: flex; gap: 4px; }
+.uploads .thumbs img { width: 52px; height: 64px; object-fit: cover; background: var(--rule); }
+.uploads b { display: block; font-weight: 600; font-size: .95rem; }
+.uploads span { font-size: .85rem; color: var(--muted); }
+.steps { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .9rem; line-height: 1.8; }
+[hidden] { display: none !important; }
+@media (max-width: 520px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .file { grid-template-columns: 72px 1fr; }
+  .file img { width: 72px; height: 90px; }
+  .uploads li { grid-template-columns: 1fr auto; }
+  .uploads .thumbs { grid-column: 1 / -1; }
+}
+</style>
+<!-- Trips the admin can add photos to: same three scripts per trip as journeys.html. -->
+<script src="trips/huai-nam-yen/trip.js" defer></script>
+<script src="trips/huai-nam-yen/images.js" defer></script>
+<script src="trips/huai-nam-yen/uploads.js" defer></script>
+<script src="assets/admin.js" defer></script>
+</head>
+<body data-mood="notes" data-repo="Nutweir/huainamyen" data-branch="main">
+<main class="admin flow">
+  <header>
+    <p class="kicker">Admin</p>
+    <h1>อัปโหลดรูปลงบันทึก</h1>
+    <p class="lede">เลือกรูป เลือกช่วงในเรื่อง ใส่คำบรรยาย แล้วกดเผยแพร่ เว็บจะอัปเดตภายในประมาณ 1 นาที</p>
+  </header>
+
+  <section class="card" id="connect" aria-labelledby="connect-t">
+    <h2 id="connect-t">1 · เชื่อมต่อ GitHub</h2>
+    <div id="connect-form">
+      <label class="field"><span>GitHub token</span>
+        <input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+        <small>token อยู่ในเบราว์เซอร์นี้เท่านั้น และส่งไปที่ api.github.com เท่านั้น</small>
+      </label>
+      <label class="check"><input type="checkbox" id="remember"> จำไว้ในอุปกรณ์นี้</label>
+      <div class="row" style="margin-top:.75rem"><button class="btn" id="connect-btn" type="button">เชื่อมต่อ</button></div>
+      <details style="margin-top:1rem">
+        <summary class="hint" style="cursor:pointer;min-height:44px;display:flex;align-items:center">ยังไม่มี token? สร้างครั้งเดียว (ประมาณ 2 นาที)</summary>
+        <ol class="steps">
+          <li>เปิด <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new ↗</a></li>
+          <li>ตั้งชื่อ เช่น <i>journal admin</i> และเลือกวันหมดอายุ</li>
+          <li>Repository access → <b>Only select repositories</b> → เลือก <b>huainamyen</b></li>
+          <li>Permissions → Repository permissions → <b>Contents: Read and write</b></li>
+          <li>กด Generate token แล้วคัดลอกมาวางด้านบน</li>
+        </ol>
+      </details>
+    </div>
+    <div id="connected" hidden>
+      <p class="status ok" id="who"></p>
+      <button class="btn ghost small" id="disconnect" type="button">ออกจากระบบ (ลบ token จากอุปกรณ์นี้)</button>
+    </div>
+    <p class="status err" id="connect-err" role="alert"></p>
+  </section>
+
+  <section class="card" id="upload" aria-labelledby="upload-t">
+    <h2 id="upload-t">2 · เพิ่มรูป</h2>
+    <form id="form">
+      <div class="grid2">
+        <label class="field"><span>ทริป</span><select id="trip"></select></label>
+        <label class="field"><span>วางไว้ช่วงไหนของเรื่อง</span><select id="target"></select></label>
+      </div>
+      <fieldset class="field">
+        <legend>ประเภทรูป</legend>
+        <div class="choices">
+          <label><input type="radio" name="as" value="story" checked> รูปในเรื่อง</label>
+          <label><input type="radio" name="as" value="decoration"> รูปตกแต่ง (แปะข้างบันทึก)</label>
+        </div>
+        <small id="as-hint">รูปจะต่อท้ายข้อความของช่วงที่เลือก ถ้าอยากแทรกกลางเรื่องให้แก้ใน trip.js</small>
+      </fieldset>
+
+      <label class="drop" id="drop">
+        <input type="file" id="files" accept="image/jpeg,image/png,image/webp,image/*" multiple>
+        <b>แตะเพื่อเลือกรูป หรือลากรูปมาวาง</b>
+        <span class="hint">JPG, PNG, WebP · เลือกได้หลายรูป · ระบบจะย่อรูปและลบข้อมูล GPS ให้</span>
+      </label>
+      <div class="files" id="file-list"></div>
+
+      <div id="layout-box" hidden>
+        <div class="grid2">
+          <label class="field"><span>รูปแบบการแสดง</span><select id="layout"></select></label>
+          <label class="field" id="position-box"><span>ตำแหน่ง</span>
+            <select id="position">
+              <option value="">อัตโนมัติ</option>
+              <option value="left">ซ้าย</option>
+              <option value="right">ขวา</option>
+              <option value="center">กลาง</option>
+              <option value="bleed-left">ล้นขอบซ้าย</option>
+              <option value="bleed-right">ล้นขอบขวา</option>
+            </select>
+          </label>
+        </div>
+        <label class="field" id="group-caption-box" hidden><span>คำบรรยายของชุดภาพ</span><input type="text" id="group-caption" placeholder="เช่น บ่ายที่บ้านนาเกียน"></label>
+        <label class="check" id="roll-box"><input type="checkbox" id="add-roll" checked> เพิ่มในม้วนฟิล์มท้ายเรื่องด้วย</label>
+      </div>
+
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" id="publish" type="submit" disabled>เผยแพร่</button>
+        <span class="hint" id="publish-hint">เชื่อมต่อ GitHub และเลือกรูปก่อน</span>
+      </div>
+      <ul class="log" id="log" aria-live="polite"></ul>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="list-t">
+    <h2 id="list-t">3 · รูปที่เพิ่มผ่านหน้านี้</h2>
+    <ul class="uploads" id="uploads"></ul>
+    <p class="hint" id="uploads-empty">ยังไม่มี</p>
+  </section>
+
+  <p class="hint"><a href="index.html">← กลับไปหน้าบันทึก</a></p>
+</main>
+</body>
+</html>
