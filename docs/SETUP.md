@@ -117,7 +117,7 @@ builds from the branch, the live site would break — so switch the source first
 1. Make the rollback branch once:
 
    ```bash
-   git branch legacy-static legacy-static-v1 && git push origin legacy-static
+   git fetch origin && git branch legacy-static origin/main && git push origin legacy-static
    ```
 
 2. Repository → Settings → Secrets and variables → Actions → **Variables**:
