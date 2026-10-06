@@ -1,7 +1,20 @@
-/* Managed by admin.html — photos added online. Edit through the admin page, not by hand. */
+/* Managed by admin.html — photos added online and edits to the trip's photos. Edit through the admin page, not by hand. */
 (window.JOURNAL_UPLOADS = window.JOURNAL_UPLOADS || {})["huai-nam-yen"] = {
   "images": {},
-  "sizes": {},
+  "sizes": {
+    "day-01/milkyway-2.jpg": [
+      1050,
+      700
+    ]
+  },
   "placements": [],
-  "gallery": []
+  "gallery": [],
+  "overrides": {
+    "images": {
+      "milkyway": {
+        "src": "day-01/milkyway-2.jpg"
+      }
+    },
+    "blocks": {}
+  }
 };
