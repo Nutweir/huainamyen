@@ -27,6 +27,8 @@
   /* ---------- trip page ---------- */
 
   function renderTrip(T) {
+    // Empty photo slots are a note to the owner, not something readers should see. Preview them with ?slots
+    T.showPlaceholders = !!T.showPlaceholders && new URLSearchParams(location.search).has("slots");
     const I = window.JournalImages.create(T);
     let chapter = null;
 
@@ -145,7 +147,7 @@
     }
 
     function roll() {
-      const frames = (T.gallery || []).map(key => I.thumb(key, { group: "roll", sizesAttr: "180px" })).filter(Boolean);
+      const frames = (T.gallery || []).map(key => I.thumb(key, { group: "roll", height: 280 })).filter(Boolean);
       if (!frames.length) return "";
       return `<section class="roll" id="roll" data-mood="notes" aria-labelledby="roll-t">
         <div class="flow"><div class="roll-head"><h2 id="roll-t" class="roll-title">ม้วนฟิล์มจากทริปนี้ <small>${frames.length} ภาพ · เลื่อนดูได้</small></h2><button type="button" class="roll-toggle" aria-pressed="false" hidden>หยุด</button></div></div>
@@ -273,9 +275,19 @@
   function setupMoods() {
     const sections = document.querySelectorAll("[data-mood]");
     if (!("IntersectionObserver" in window) || !sections.length) return;
-    document.body.dataset.mood = sections[0].dataset.mood;
+    // The browser's toolbar colour follows the page too (mobile Chrome/Safari)
+    let meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!meta) { meta = document.createElement("meta"); meta.name = "theme-color"; document.head.appendChild(meta); }
+    document.querySelectorAll('meta[name="theme-color"][media]').forEach(m => m.remove());
+    const setMood = mood => {
+      document.body.dataset.mood = mood;
+      // read the colour once the 1.6 s cross-fade has finished
+      clearTimeout(setMood.t);
+      setMood.t = setTimeout(() => { meta.content = getComputedStyle(document.body).getPropertyValue("--page").trim() || "#f6f1e7"; }, reducedMotion.matches ? 0 : 1700);
+    };
+    setMood(sections[0].dataset.mood);
     const io = new IntersectionObserver(entries => {
-      entries.forEach(en => { if (en.isIntersecting) document.body.dataset.mood = en.target.dataset.mood; });
+      entries.forEach(en => { if (en.isIntersecting) setMood(en.target.dataset.mood); });
     }, { rootMargin: "-50% 0px -50% 0px" });
     sections.forEach(s => io.observe(s));
   }

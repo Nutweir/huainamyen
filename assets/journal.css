@@ -42,18 +42,16 @@ body[data-mood="forest"]  { --page: #e4e9db; --ink: #1f251d; --muted: #566050; -
 body[data-mood="evening"] { --page: #f2e7d5; --ink: #26211b; --muted: #6a5e4d; --accent: #5b5a35; --rule: #dbcdb4; --hand: #80532d; }
 body[data-mood="notes"]   { --page: #f4efe5; --ink: #23211d; --muted: #675f52; --accent: #3f5e45; --rule: #d9d0bf; --hand: #7b5634; }
 
-@media (prefers-color-scheme: dark) {
-  :root { color-scheme: dark; --polaroid: #e9e5dc; }
-  body,
-  body[data-mood="morning"] { --page: #1a1915; --ink: #ebe5d8; --muted: #a9a193; --accent: #a8c19f; --rule: #34312a; --hand: #d6b48b; }
-  body[data-mood="day"]     { --page: #1b1a15; --ink: #ece5d6; --muted: #aca291; --accent: #aac29a; --rule: #36322a; --hand: #d6b48b; }
-  body[data-mood="golden"]  { --page: #211b12; --ink: #efe4cf; --muted: #b5a283; --accent: #d7bf85; --rule: #3d3424; --hand: #e3b778; }
-  body[data-mood="dusk"]    { --page: #17161a; --ink: #e9e3d9; --muted: #a59e95; --accent: #c4c09a; --rule: #302d33; --hand: #d6b48b; }
-  body[data-mood="night"]   { --page: #080c16; --ink: #ebe6da; --muted: #9da3b1; --accent: #d6c497; --rule: #1e2638; --hand: #dcc08b; }
-  body[data-mood="dawn"]    { --page: #171a18; --ink: #e6e9e3; --muted: #a0a89e; --accent: #a5c1a9; --rule: #2e332f; --hand: #cfb48f; }
-  body[data-mood="forest"]  { --page: #121811; --ink: #e2e9dc; --muted: #9eab95; --accent: #9fc29a; --rule: #273024; --hand: #cdb185; }
-  body[data-mood="evening"] { --page: #1d1913; --ink: #eee5d5; --muted: #b0a28c; --accent: #cfc48f; --rule: #383126; --hand: #ddb37f; }
-  body[data-mood="notes"]   { --page: #191814; --ink: #ebe5d8; --muted: #a8a092; --accent: #a8c19f; --rule: #34312a; --hand: #d6b48b; }
+/*
+ * The page follows the story's time of day, not the device's light/dark setting: morning is
+ * paper, 20:00 is night. Every mood keeps text at WCAG AA contrast (4.8:1 or more); readers who
+ * ask for more contrast get darker secondary text, and forced-colors mode uses system colours.
+ */
+:root { color-scheme: light; }
+body[data-mood="night"] { color-scheme: dark; }
+@media (prefers-contrast: more) {
+  body:not([data-mood="night"]) { --muted: color-mix(in srgb, var(--ink) 85%, var(--page)); --hand: color-mix(in srgb, var(--hand) 70%, #000); --rule: color-mix(in srgb, var(--ink) 35%, var(--page)); }
+  body[data-mood="night"] { --muted: #d4d7de; }
 }
 
 /* ---------- base ---------- */
@@ -90,6 +88,7 @@ p { margin: 0 0 1.1em; }
 h1, h2, h3, h4 { margin: 0; font-weight: 500; text-wrap: balance; }
 b { font-weight: 600; }
 .hand { font-family: var(--f-hand); font-weight: 400; color: var(--hand); line-height: 1.6; }
+.sr-only .time { position: static; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .skip { position: fixed; top: 8px; left: 8px; z-index: 60; padding: 10px 16px; background: var(--page); color: var(--ink); transform: translateY(-160%); }
 .skip:focus { transform: none; }
@@ -215,6 +214,14 @@ figcaption .hand { font-size: 1.1rem; }
 .ph--full { grid-column: full; margin: 3rem 0; }
 .ph--full img { height: min(92svh, calc(100vw * var(--r, .75))); object-fit: cover; }
 .ph--full figcaption { padding: 0 var(--gutter); max-width: calc(var(--wide) + var(--gutter) * 2); margin-inline: auto; width: 100%; }
+/* On wider screens: the whole photo, uncropped, at most ~1.25× its file size (--maxw) so it stays sharp.
+   Landscape photos still run edge to edge when the file is big enough; tall ones become a large print. */
+@media (min-width: 720px) {
+  .ph--full { display: grid; justify-items: center; }
+  .ph--full .ph-open { width: auto; max-width: 100%; }
+  .ph--full img { width: auto; height: auto; max-width: min(100vw, var(--maxw, 100vw)); max-height: 92svh; object-fit: contain; }
+  .ph--full figcaption { width: auto; justify-self: center; justify-content: center; text-align: center; column-gap: 1.5rem; }
+}
 
 /* spotlight: a tall photo shown uncropped on a band of its own colour */
 .ph--spotlight { grid-column: full; margin: 3rem 0; padding: 0; }

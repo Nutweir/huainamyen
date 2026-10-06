@@ -31,7 +31,7 @@ window.JournalImages = (() => {
   const PRESETS = {
     hero:          { kind: "single", sizes: "100vw", priority: true },
     full:          { kind: "single", sizes: "100vw" },
-    spotlight:     { kind: "single", sizes: "(min-width: 720px) 60vw, 100vw" },
+    spotlight:     { kind: "single", sizes: "(min-width: 720px) 70vh, 100vw" },
     background:    { kind: "single", sizes: "100vw", expandable: false },
     wide:          { kind: "single", sizes: "(min-width: 1120px) 1080px, 100vw", crop: "3 / 2" },
     inline:        { kind: "single", sizes: "(min-width: 720px) 680px, 100vw" },
@@ -123,7 +123,7 @@ window.JournalImages = (() => {
       if (!im) return "";
       if (im.placeholder) return T.showPlaceholders ? `<figure class="ph ph--${layout} ph--empty${positionClass(b.position || b.side)}">${slot(im.placeholder)}</figure>` : "";
       const tilt = im.rotation ?? (preset.tilt ? nextTilt(preset.tilt) : null);
-      const style = [im.w && `--r:${(im.h / im.w).toFixed(4)}`, tilt != null && `--tilt:${tilt}deg`].filter(Boolean).join(";");
+      const style = [im.w && `--r:${(im.h / im.w).toFixed(4)}`, im.w && layout === "full" && `--maxw:${Math.round(im.w * 1.25)}px`, tilt != null && `--tilt:${tilt}deg`].filter(Boolean).join(";");
       const cls = ["ph", `ph--${layout}`, im.size && `size-${im.size}`, b.tone && `tone-${b.tone}`].filter(Boolean).join(" ") + positionClass(im.position);
       const reveal = ` data-reveal${b.reveal ? `="${b.reveal}"` : ""}`;
       const overlay = layout === "background" && b.text ? `<p class="bg-text">${[].concat(b.text).join("<br>")}</p>` : "";
@@ -201,10 +201,12 @@ window.JournalImages = (() => {
     }
 
     /** A thumbnail for lists (film roll, journeys). */
-    function thumb(key, { group = "roll", expandable = true, sizesAttr = "200px" } = {}) {
+    // height: the thumbnail's displayed height, so wide photos ask for a wide enough file
+    function thumb(key, { group = "roll", expandable = true, sizesAttr = "200px", height } = {}) {
       const im = resolve(key);
       if (!im || im.placeholder) return "";
-      return wrap(im, tag(im, { sizesAttr }), { group, expandable });
+      const sizes = height && im.w ? `${Math.round(height * im.w / im.h)}px` : sizesAttr;
+      return wrap(im, tag(im, { sizesAttr: sizes }), { group, expandable });
     }
 
     function cover(key) {
