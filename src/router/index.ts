@@ -62,3 +62,13 @@ router.beforeEach(async to => {
   }
   return true;
 });
+
+// Admin screens name the tab themselves (public pages set title + description via usePageMeta)
+const ADMIN_TITLES: Record<string, string> = {
+  login: "เข้าสู่ระบบ", dashboard: "ภาพรวม", trips: "ทริป", "trip-editor": "แก้ไขทริป",
+  media: "คลังรูปและวิดีโอ", settings: "ตั้งค่า", preview: "ตัวอย่าง",
+};
+router.afterEach(to => {
+  const name = String(to.name || "");
+  if (ADMIN_TITLES[name]) document.title = `${ADMIN_TITLES[name]} · หลังบ้าน · Journeys by Nutweir`;
+});
