@@ -254,18 +254,39 @@
     return file;
   }
 
-  // A clip's size, length and a poster frame. Failing here means this browser can't play the file.
+  /*
+   * A clip's size and length, plus a poster frame when the browser will give one.
+   * iPhone Safari only decodes frames for a video that is in the page and has been played,
+   * so the clip goes into the page (invisible), plays muted for a moment, then is captured.
+   * Only a clip with no readable metadata at all counts as unplayable; a missing poster is fine.
+   */
   function videoInfo(url, at = 1) {
     return new Promise((ok, fail) => {
       const v = document.createElement("video");
-      const timer = setTimeout(() => fail(new Error("timeout")), 20000);
-      v.muted = true; v.playsInline = true; v.preload = "auto"; v.crossOrigin = "anonymous";
-      v.onloadedmetadata = () => { v.currentTime = Math.min(at, (v.duration || 2) / 2); };
-      v.onseeked = async () => {
-        try { ok({ w: v.videoWidth, h: v.videoHeight, duration: v.duration, poster: await frameJpeg(v) }); } catch (e) { fail(e); } finally { clearTimeout(timer); }
-      };
-      v.onerror = () => { clearTimeout(timer); fail(new Error("unplayable")); };
+      v.muted = true; v.defaultMuted = true; v.playsInline = true;
+      v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("webkit-playsinline", "");
+      v.preload = "auto";
+      v.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;";
+      document.body.appendChild(v);
+      const done = (fn, arg) => { clearTimeout(timer); v.removeAttribute("src"); v.load(); v.remove(); fn(arg); };
+      const timer = setTimeout(() => done(fail, new Error("timeout")), 25000);
+      const waitFor = (event, ms) => new Promise(r => { const t = setTimeout(r, ms); v.addEventListener(event, () => { clearTimeout(t); r(); }, { once: true }); });
+      v.addEventListener("error", () => done(fail, new Error("unplayable")), { once: true });
+      v.addEventListener("loadedmetadata", async () => {
+        const info = { w: v.videoWidth, h: v.videoHeight, duration: v.duration, poster: null };
+        try {
+          await v.play().catch(() => {});
+          await waitFor("timeupdate", 2500);
+          v.pause();
+          const t = Math.min(at, (v.duration || 2) / 2);
+          if (Math.abs(v.currentTime - t) > 0.05) { v.currentTime = t; await waitFor("seeked", 4000); }
+          if (v.readyState >= 2 && v.videoWidth) info.poster = await frameJpeg(v);
+          if (!info.w) { info.w = v.videoWidth; info.h = v.videoHeight; }
+        } catch { /* no poster: it can be picked later from the editor */ }
+        done(ok, info);
+      }, { once: true });
       v.src = url;
+      v.load();
     });
   }
 
@@ -277,7 +298,7 @@
     return new Promise(ok => canvas.toBlob(ok, "image/jpeg", 0.82));
   }
 
-  const UNPLAYABLE = "เบราว์เซอร์นี้เปิดคลิปนี้ไม่ได้ (มักเป็นไฟล์ HEVC/.mov จาก iPhone) แปลงเป็น MP4 (H.264) ก่อน หรือเลือกจาก Safari บน iPhone";
+  const UNPLAYABLE = "เบราว์เซอร์นี้เปิดคลิปนี้ไม่ได้ ถ้าเป็นไฟล์ HEVC/.mov จาก iPhone ให้ลองเลือกจาก Safari บน iPhone หรือแปลงเป็น MP4 (H.264) ก่อน";
   const extOf = f => (f.name.match(/\.(mp4|m4v|mov|webm)$/i) || [, "mp4"])[1].toLowerCase();
 
   function freshVideoSrc(T, data, file) {
@@ -418,7 +439,7 @@
         const url = URL.createObjectURL(file);
         try {
           const info = await videoInfo(url);
-          files.push({ id, kind: "video", file, url, ...info, posterUrl: URL.createObjectURL(info.poster) });
+          files.push({ id, kind: "video", file, url, ...info, posterUrl: info.poster ? URL.createObjectURL(info.poster) : "" });
         } catch { URL.revokeObjectURL(url); notes.push(`${file.name}: ${UNPLAYABLE}`); }
         continue;
       }
@@ -456,7 +477,7 @@
   function videoCard(f, n) {
     const mov = extOf(f.file) === "mov";
     return `<div class="file" data-id="${f.id}">
-      <div class="file-side"><video src="${f.url}" poster="${f.posterUrl}" muted playsinline preload="metadata"></video><span class="tag">วิดีโอ ${Math.round(f.duration || 0)} วิ</span></div>
+      <div class="file-side"><video src="${f.url}"${f.posterUrl ? ` poster="${f.posterUrl}"` : ""} muted playsinline preload="metadata"></video><span class="tag">วิดีโอ ${Math.round(f.duration || 0)} วิ</span></div>
       <div>
         <div class="file-head"><span>${n + 1}. ${esc(f.file.name)} · ${(f.file.size / 1048576).toFixed(1)} MB</span><button type="button" data-remove="${f.id}">เอาออก</button></div>
         <p class="size-line"><span class="size-info">${f.w}×${f.h} px</span>${mov ? `<span class="size-check warn">! ไฟล์ .mov อาจเล่นไม่ได้บน Android/Windows แนะนำ MP4</span>` : `<span class="size-check ok">✓ วางในเรื่องเป็นคลิป เล่นเองเมื่อเลื่อนมาถึง</span>`}</p>
@@ -543,9 +564,10 @@
         const keys = takenKeys(T, data), out = [], added = [];
         const id = `u-${Date.now().toString(36)}`, when = new Date().toISOString();
         clips.forEach((c, n) => {
-          const src = freshVideoSrc(T, data, c.file), poster = src.replace(/\.[^.]+$/, "-poster.jpg");
-          out.push({ path: T.base + src, blob: c.file }, { path: T.base + poster, blob: c.poster });
-          data.placements.push({ id: `${id}-v${n}`, target, as: "story", added: when, block: { video: { src, poster, w: c.w, h: c.h, label: (c.label || c.caption || `คลิปจาก${label}`).trim(), ...(c.caption ? { caption: c.caption.trim() } : {}) } } });
+          const src = freshVideoSrc(T, data, c.file), poster = c.poster ? src.replace(/\.[^.]+$/, "-poster.jpg") : null;
+          out.push({ path: T.base + src, blob: c.file });
+          if (poster) out.push({ path: T.base + poster, blob: c.poster });
+          data.placements.push({ id: `${id}-v${n}`, target, as: "story", added: when, block: { video: { src, ...(poster ? { poster } : {}), w: c.w, h: c.h, label: (c.label || c.caption || `คลิปจาก${label}`).trim(), ...(c.caption ? { caption: c.caption.trim() } : {}) } } });
         });
         for (const v of values) {
           const src = freshSrc(T, data, folder, v.file);
@@ -740,7 +762,7 @@
     editing = { occ, video: true, file: null, poster: null };
     $("editor-title").textContent = `${targetLabel(T, occ.host)} · วิดีโอ`;
     $("editor-body").innerHTML = `
-      <div class="clip-preview"><video id="clip-video" src="${T.base}${v.src}" ${v.poster ? `poster="${T.base}${v.poster}"` : ""} controls muted playsinline preload="metadata" crossorigin="anonymous"></video></div>
+      <div class="clip-preview"><video id="clip-video" src="${T.base}${v.src}" ${v.poster ? `poster="${T.base}${v.poster}"` : ""} controls muted playsinline preload="metadata"></video></div>
       <div class="row" style="margin:.6rem 0 1rem"><button class="btn ghost small" type="button" id="clip-frame">ใช้เฟรมที่หยุดอยู่เป็นภาพปก</button><span class="hint" id="clip-frame-note"></span></div>
       <label class="field"><span>คำบรรยาย (caption)</span><input type="text" data-k="caption" value="${esc(v.caption)}"></label>
       <label class="field"><span>คำอธิบายคลิป (สำหรับโปรแกรมอ่านหน้าจอ)</span><input type="text" data-k="label" value="${esc(v.label)}"></label>
@@ -772,7 +794,7 @@
       editing.poster = null;
       $("clip-video").removeAttribute("poster");
       $("clip-video").src = url;
-      note.textContent = `คลิปใหม่ ${info.w}×${info.h} · ${Math.round(info.duration)} วินาที`;
+      note.textContent = `คลิปใหม่ ${info.w}×${info.h} · ${Math.round(info.duration)} วินาที${info.poster ? "" : " · กดเล่นแล้วหยุดที่เฟรมที่ชอบ แล้วกดปุ่มด้านบนเพื่อตั้งภาพปก"}${extOf(file) === "mov" ? " · ไฟล์ .mov อาจเล่นไม่ได้บน Android/Windows บางเครื่อง ถ้าทำได้ แนะนำ MP4" : ""}`;
     } catch { URL.revokeObjectURL(url); e.target.value = ""; alert(UNPLAYABLE); }
   });
 
@@ -796,6 +818,7 @@
           Object.assign(change, { src, w: pickedFile.w, h: pickedFile.h });
         }
         const poster = pickedPoster || (pickedFile && pickedFile.poster);
+        if (!poster && pickedFile) change.poster = ""; // the old clip's poster no longer fits
         if (poster) {
           const path = (change.src || now.src).replace(/\.[^.]+$/, `-poster-${Date.now().toString(36)}.jpg`);
           out.push({ path: T.base + path, blob: poster });
