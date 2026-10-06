@@ -20,6 +20,10 @@
     "day-02/img-0820.jpg": [
       1440,
       1800
+    ],
+    "day-02/img-3282.jpg": [
+      1440,
+      1800
     ]
   },
   "placements": [],
@@ -37,6 +41,11 @@
       "goat": {
         "time": "10:37",
         "src": "day-02/img-0820.jpg"
+      },
+      "waterfall-rocks": {
+        "time": "12:20",
+        "date": "2026-10-04",
+        "src": "day-02/img-3282.jpg"
       }
     },
     "blocks": {
