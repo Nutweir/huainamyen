@@ -83,7 +83,9 @@
 
   /* ---------- GitHub ---------- */
   async function gh(path, opts = {}) {
+    // no-store: GitHub lets browsers cache API answers for 60 s, which would hand us an old commit or an old uploads.js.
     const res = await fetch(API + path, {
+      cache: "no-store",
       ...opts,
       headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(opts.body ? { "Content-Type": "application/json" } : {}) }
     });
@@ -127,7 +129,7 @@
    * { data, files: [{ path, b64 }], remove: [paths] }. Retries once if someone pushed meanwhile.
    */
   async function commit(T, message, build, log) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       const ref = await gh(`/repos/${REPO}/git/ref/heads/${BRANCH}`);
       const head = await gh(`/repos/${REPO}/git/commits/${ref.object.sha}`);
       const current = await readUploads(T, ref.object.sha);
@@ -146,8 +148,9 @@
         await gh(`/repos/${REPO}/git/refs/heads/${BRANCH}`, { method: "PATCH", body: JSON.stringify({ sha: next.sha }) });
         return plan.data;
       } catch (e) {
-        if (e.status !== 422 || attempt) throw e;
+        if (e.status !== 422 || attempt === 2) throw e;
         log("มีการแก้ไขใหม่บน GitHub ระหว่างนี้ กำลังลองอีกครั้ง…");
+        await new Promise(r => setTimeout(r, 1500));
       }
     }
   }
