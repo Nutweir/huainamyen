@@ -9,12 +9,12 @@
     }
   },
   "sizes": {
-    "day-01/milkyway-2.jpg": [
-      1050,
-      700
-    ],
     "day-02/r0012050.jpg": [
       1440,
+      1800
+    ],
+    "day-01/img-0185.jpg": [
+      1350,
       1800
     ]
   },
@@ -23,7 +23,8 @@
   "overrides": {
     "images": {
       "milkyway": {
-        "src": "day-01/milkyway-2.jpg"
+        "time": "20:48",
+        "src": "day-01/img-0185.jpg"
       },
       "uncle-phue-lue": {
         "caption": "ลุงพือลือ กับพี่เก่ง",
