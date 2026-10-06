@@ -167,9 +167,11 @@
     function roll() {
       if (!T.gallery || !T.gallery.length) return "";
       return `<section class="roll" id="roll" data-mood="notes" aria-labelledby="roll-t">
-        <div class="flow"><h2 id="roll-t" class="roll-title">ม้วนฟิล์มจากทริปนี้ <small>${T.gallery.length} ภาพ · เลื่อนดูได้</small></h2></div>
+        <div class="flow"><div class="roll-head"><h2 id="roll-t" class="roll-title">ม้วนฟิล์มจากทริปนี้ <small>${T.gallery.length} ภาพ · เลื่อนดูได้</small></h2><button type="button" class="roll-toggle" aria-pressed="false" hidden>หยุด</button></div></div>
         <div class="strip" tabindex="0" role="region" aria-labelledby="roll-t">
-          <ol>${T.gallery.map(key => `<li>${openable(key, img(key), "", "roll")}</li>`).join("")}</ol>
+          <ol>${T.gallery.map(key => `<li>${openable(key, img(key), "", "roll")}</li>`).join("")}${
+            // A second, hidden copy lets the strip loop without a jump.
+            T.gallery.map(key => `<li data-dup aria-hidden="true">${openable(key, img(key), "", "roll").replace("<button ", '<button tabindex="-1" ')}</li>`).join("")}</ol>
         </div>
       </section>`;
     }
@@ -245,6 +247,7 @@
     setupNav();
     setupReveal();
     setupLightbox();
+    setupRoll();
     setupMap(T);
     setupSplitter(T);
     followLegacyHash(T);
@@ -350,9 +353,10 @@
     document.addEventListener("click", e => {
       const b = e.target.closest("[data-lb]");
       if (!b) return;
-      opener = b;
-      group = [...document.querySelectorAll(`[data-lb-group="${b.dataset.lbGroup}"]`)];
-      show(group.indexOf(b));
+      group = [...document.querySelectorAll(`[data-lb-group="${b.dataset.lbGroup}"]`)].filter(x => !x.closest("[data-dup]"));
+      // A looped copy in the film roll opens as its original.
+      opener = group.find(x => x.dataset.lb === b.dataset.lb) || b;
+      show(group.indexOf(opener));
       dlg.showModal();
     });
     dlg.querySelector(".lb-close").addEventListener("click", () => dlg.close());
@@ -372,6 +376,53 @@
       x0 = null;
     });
     dlg.addEventListener("close", () => { im.removeAttribute("src"); opener && opener.focus({ preventScroll: true }); });
+  }
+
+  // The film roll drifts slowly on its own, like a contact sheet sliding past.
+  function setupRoll() {
+    const strip = document.querySelector(".strip");
+    const toggle = document.querySelector(".roll-toggle");
+    const firstDup = strip && strip.querySelector("[data-dup]");
+    if (!strip || !firstDup) return;
+    if (reducedMotion.matches) {
+      strip.querySelectorAll("[data-dup]").forEach(li => li.remove());
+      return;
+    }
+    toggle.hidden = false;
+    const SPEED = 28; // px per second
+    let pos = strip.scrollLeft, last = 0, visible = false, stopped = false, held = 0, raf = 0;
+    const loopWidth = () => firstDup.offsetLeft - strip.querySelector("li").offsetLeft;
+    const paused = () => stopped || held > 0 || !visible || document.hidden;
+    const tick = t => {
+      raf = 0;
+      if (paused()) return;
+      const dt = last ? Math.min(t - last, 100) / 1000 : 0;
+      last = t;
+      if (Math.abs(strip.scrollLeft - pos) > 2) pos = strip.scrollLeft; // the reader scrolled by hand
+      pos += SPEED * dt;
+      const w = loopWidth();
+      if (w > 0 && pos >= w) pos -= w;
+      strip.scrollLeft = pos;
+      raf = requestAnimationFrame(tick);
+    };
+    const run = () => { if (!raf && !paused()) { last = 0; pos = strip.scrollLeft; raf = requestAnimationFrame(tick); } };
+    const hold = d => () => { held = Math.max(0, held + d); run(); };
+    strip.addEventListener("pointerenter", hold(1));
+    strip.addEventListener("pointerleave", hold(-1));
+    strip.addEventListener("focusin", hold(1));
+    strip.addEventListener("focusout", hold(-1));
+    let touchTimer = 0;
+    strip.addEventListener("touchstart", () => { clearTimeout(touchTimer); held = Math.max(held, 1); }, { passive: true });
+    strip.addEventListener("touchend", () => { touchTimer = setTimeout(() => { held = 0; run(); }, 2500); }, { passive: true });
+    toggle.addEventListener("click", () => {
+      stopped = !stopped;
+      toggle.setAttribute("aria-pressed", String(stopped));
+      toggle.textContent = stopped ? "เล่นต่อ" : "หยุด";
+      run();
+    });
+    document.addEventListener("visibilitychange", run);
+    document.querySelector("dialog.lightbox")?.addEventListener("close", run);
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; run(); }).observe(strip);
   }
 
   function setupMap(T) {
