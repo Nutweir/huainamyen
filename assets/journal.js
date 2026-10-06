@@ -465,10 +465,54 @@
 
   /* ---------- boot ---------- */
 
+  // Edits to the trip's own photos made in admin.html: per photo (caption, file, hidden…) and per block (layout, position, filled slots).
+  function applyOverrides(T, O) {
+    const JI = window.JournalImages;
+    const isImg = b => b && typeof b === "object" && (b.image || b.images || b.photo || b.photos || b.placeholder);
+    const lists = () => [
+      ...T.chapters.flatMap(ch => [[`chapter:${ch.id}`, ch.images], [`chapter:${ch.id}`, ch.decorations, true],
+        ...ch.events.flatMap(e => [[e.id, e.content], [e.id, e.images], [e.id, e.decorations, true]])])
+    ];
+    // Photo edits win over captions written on the story block itself, so apply them there too.
+    const OI = O.images || {};
+    Object.entries(OI).forEach(([k, o]) => { if (T.images[k]) T.images[k] = { ...T.images[k], ...o }; });
+    if (Object.keys(OI).length) {
+      lists().forEach(([, list]) => (list || []).forEach(b => {
+        if (!isImg(b)) return;
+        const own = typeof (b.image ?? b.photo) === "string" ? OI[b.image ?? b.photo] : null;
+        if (own) Object.assign(b, own);
+        const set = b.images || b.photos;
+        if (set) set.forEach((x, i) => { const k = typeof x === "object" && x ? x.image ?? x.photo : null; if (typeof k === "string" && OI[k]) set[i] = { ...x, ...OI[k] }; });
+      }));
+    }
+    const B = O.blocks || {};
+    if (!Object.keys(B).length) return;
+    const apply = (host, list, deco) => (list || []).forEach((b, i) => {
+      if (!isImg(b)) return;
+      const o = B[JI.blockId(host, b, deco)];
+      if (!o) return;
+      const { fill = {}, ...rest } = o;
+      let next = { ...b, ...rest };
+      if (next.images || next.photos) {
+        next.images = (next.images || next.photos).map(x => fill[JI.itemId(x)] ? { image: fill[JI.itemId(x)] } : x);
+        delete next.photos;
+      } else if (fill[JI.itemId(b)]) {
+        next = { ...next, image: fill[JI.itemId(b)] };
+        delete next.placeholder;
+      }
+      list[i] = next;
+    });
+    lists().forEach(([host, list, deco]) => apply(host, list, deco));
+    if (T.ending && typeof T.ending.photo === "string" && B[`ending:${T.ending.photo}`]) {
+      T.ending.photo = { image: T.ending.photo, ...B[`ending:${T.ending.photo}`] };
+    }
+  }
+
   // Photos added through admin.html live in trips/<slug>/uploads.js; fold them into the trip before rendering.
   function mergeUploads(T) {
     const U = (window.JOURNAL_UPLOADS || {})[T.slug];
     if (!U) return T;
+    applyOverrides(T, U.overrides || {});
     T.images = { ...T.images, ...(U.images || {}) };
     T.gallery = [...(T.gallery || []), ...(U.gallery || []).filter(k => !(T.gallery || []).includes(k))];
     (U.placements || []).forEach(p => {

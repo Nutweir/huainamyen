@@ -64,6 +64,7 @@ window.JournalImages = (() => {
       if (!known) { warn(`Image "${typeof ref === "string" ? ref : JSON.stringify(item)}" is not in trip.images of ${T.slug}`); return null; }
       const im = { ...known, ...(typeof item === "object" && item !== known ? item : {}) };
       delete im.image;
+      if (im.hidden) return null; // hidden from the admin page
       if (!im.src) { warn(`Image without src: ${JSON.stringify(item)}`); return null; }
       const dims = im.w && im.h ? [im.w, im.h] : sizes[im.src];
       if (dims) [im.w, im.h] = dims;
@@ -222,6 +223,21 @@ window.JournalImages = (() => {
     return { resolve, block, decorations, thumb, cover, url, isBeside };
   }
 
+  /*
+   * Stable ids so edits made in admin.html find the same photo block again:
+   * "<event or chapter:id>:<image keys>" — decorations add "deco:", empty slots are "?<label>".
+   */
+  function itemId(x) {
+    if (typeof x === "string") return x;
+    if (!x) return "?";
+    if (x.placeholder) return `?${x.placeholder}`;
+    const ref = x.image ?? x.photo;
+    if (typeof ref === "string") return ref;
+    const src = (ref && ref.src) || x.src;
+    return src ? `src:${src}` : "?";
+  }
+  const blockId = (host, b, deco = false) => `${host}:${deco ? "deco:" : ""}${(b.images || b.photos || [b]).map(itemId).join("+")}`;
+
   /** Broken or missing files: keep the layout, swap in a quiet paper note, warn in development. */
   function setupFallbacks() {
     document.addEventListener("error", e => {
@@ -242,5 +258,5 @@ window.JournalImages = (() => {
     }, true);
   }
 
-  return { create, setupFallbacks, PRESETS, stampDate };
+  return { create, setupFallbacks, PRESETS, stampDate, itemId, blockId };
 })();

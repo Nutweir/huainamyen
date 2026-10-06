@@ -56,6 +56,15 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
 .uploads b { display: block; font-weight: 600; font-size: .95rem; }
 .uploads span { font-size: .85rem; color: var(--muted); }
 .steps { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .9rem; line-height: 1.8; }
+.uploads .group-head { display: block; border: 0; padding: 1rem 0 0; font-family: var(--f-display); font-size: .95rem; color: var(--muted); }
+.uploads .thumbs img.is-hidden { opacity: .3; }
+.empty-thumb { display: grid; place-items: center; width: 52px; height: 64px; border: 1px dashed var(--rule); color: var(--muted); font-size: 1.2rem; }
+.empty-thumb.big { width: 96px; height: 120px; }
+.editor { width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 1.25rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--page); color: var(--ink); }
+.editor::backdrop { background: rgb(20 18 14 / .55); }
+.editor h2 { font-family: var(--f-display); font-size: 1.2rem; margin: 0 0 1rem; }
+.editor-actions { position: sticky; bottom: -1.25rem; background: var(--page); padding: 1rem 0; margin-top: .5rem; border-top: 1px solid var(--rule); }
+.btn.danger { color: #a2412b; border-color: #e3c4ba; margin-left: auto; }
 [hidden] { display: none !important; }
 @media (max-width: 520px) {
   .grid2 { grid-template-columns: 1fr; }
@@ -69,6 +78,7 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
 <script src="trips/huai-nam-yen/trip.js" defer></script>
 <script src="trips/huai-nam-yen/images.js" defer></script>
 <script src="trips/huai-nam-yen/uploads.js" defer></script>
+<script src="assets/journal-images.js" defer></script>
 <script src="assets/admin.js" defer></script>
 </head>
 <body data-mood="notes" data-repo="Nutweir/huainamyen" data-branch="main">
@@ -156,12 +166,27 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
   </section>
 
   <section class="card" aria-labelledby="list-t">
-    <h2 id="list-t">3 · รูปที่เพิ่มผ่านหน้านี้</h2>
+    <h2 id="list-t">3 · รูปทั้งหมดในทริป</h2>
+    <p class="hint" style="margin-bottom:1rem">เรียงตามเนื้อเรื่อง กด "แก้ไข" เพื่อเปลี่ยน caption เวลา สถานที่ รูปแบบการแสดง เปลี่ยนรูปใหม่ ซ่อนรูป หรือเติมรูปลงช่องว่าง</p>
     <ul class="uploads" id="uploads"></ul>
     <p class="hint" id="uploads-empty">ยังไม่มี</p>
   </section>
 
   <p class="hint"><a href="index.html">← กลับไปหน้าบันทึก</a></p>
 </main>
+
+<dialog class="editor" id="editor" aria-labelledby="editor-title">
+  <form method="dialog">
+    <p class="kicker">แก้ไขรูป</p>
+    <h2 id="editor-title"></h2>
+    <div id="editor-body"></div>
+    <div class="row editor-actions">
+      <button class="btn" id="editor-save" type="submit">บันทึกและเผยแพร่</button>
+      <button class="btn ghost" id="editor-cancel" type="button">ยกเลิก</button>
+      <button class="btn ghost danger" id="editor-delete" type="button" hidden>ลบรูปชุดนี้</button>
+    </div>
+    <ul class="log" id="editor-log" aria-live="polite"></ul>
+  </form>
+</dialog>
 </body>
 </html>
