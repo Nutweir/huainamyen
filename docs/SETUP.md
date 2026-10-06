@@ -1,5 +1,10 @@
 # Setup guide — Journeys by Nutweir (Vue 3 + Supabase)
 
+> **Live:** https://journal.nutweir.com (GitHub Pages via Actions, custom domain, HTTPS enforced).
+> DNS at Cloudflare: `journal` CNAME → `nutweir.github.io` (DNS only); `nutweir.com` verified in GitHub.
+> Old `nutweir.github.io/huainamyen/...` links redirect here. Pushing to `main` deploys.
+> Supabase Auth URLs: Site URL `https://journal.nutweir.com/`, redirect `https://journal.nutweir.com/admin`.
+
 The site runs in two modes:
 
 | Mode | `VITE_BACKEND` | Data lives in | Use for |
