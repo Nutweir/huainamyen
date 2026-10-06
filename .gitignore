@@ -1,5 +1,15 @@
-# Raw camera files stay local; tools/prepare_images.py converts them to JPG.
+node_modules/
+dist/
+.tmp/
+.env
+.env.*
+!.env.example
+playwright-report/
+test-results/
+*.tsbuildinfo
+# Raw camera files stay local; the admin converts them in the browser.
 *.dng
 *.DNG
 *.heic
 *.HEIC
+.claude/
