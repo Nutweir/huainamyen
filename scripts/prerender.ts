@@ -66,7 +66,7 @@ function write(path: string, html: string) {
 async function published(): Promise<{ trips: TripBundle[]; site: SiteSettings | null }> {
   if (SUPABASE) {
     const get = async (q: string) => {
-      const r = await fetch(`${SUPABASE.url}/rest/v1/${q}`, { headers: { apikey: SUPABASE.key, Authorization: `Bearer ${SUPABASE.key}` } });
+      const r = await fetch(`${SUPABASE.url}/rest/v1/${q}`, { headers: { apikey: SUPABASE.key, ...(SUPABASE.key.startsWith("eyJ") ? { Authorization: `Bearer ${SUPABASE.key}` } : {}) } });
       if (!r.ok) throw new Error(`${q}: ${r.status} ${await r.text()}`);
       return r.json();
     };

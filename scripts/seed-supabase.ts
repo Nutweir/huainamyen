@@ -2,8 +2,8 @@
  * Put the migrated journal(s) into a real Supabase project — run once after the SQL migration and after
  * the owner account exists (docs/SETUP.md). Runs in YOUR terminal only:
  *
- *   SEED_EMAIL=you@example.com SEED_PASSWORD=… npm run seed:supabase            # skips trips that exist
- *   SEED_EMAIL=… SEED_PASSWORD=… npm run seed:supabase -- --force             # re-save + re-publish them
+ *   npm run seed:supabase              # asks for the owner e-mail and password (hidden); skips trips that exist
+ *   npm run seed:supabase -- --force   # re-save + re-publish them
  *
  * It signs in as the owner and uses the same database functions as the admin, so RLS applies exactly
  * as it does in the browser. No service-role key is needed. Photos keep their static-site paths
@@ -13,6 +13,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { JSDOM } from "jsdom";
 import { createClient } from "@supabase/supabase-js";
+import { createInterface } from "node:readline";
 import type { SiteSettings, TripBundle } from "../src/types/content";
 import { useWindow } from "../src/utils/sanitize";
 import { SupabaseRepository, mediaToRow } from "../src/services/supabase/SupabaseRepository";
@@ -24,14 +25,33 @@ function loadEnv(file: string): Record<string, string> {
 const env = { ...loadEnv(".env"), ...loadEnv(".env.local"), ...process.env } as Record<string, string | undefined>;
 const force = process.argv.includes("--force");
 
+/** Ask for the owner's e-mail and password in the terminal; the password is not echoed. */
+async function askCredentials(): Promise<{ email: string; password: string }> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY === true });
+  const out = rl as unknown as { _writeToOutput: (s: string) => void; output: NodeJS.WriteStream };
+  const write = out._writeToOutput.bind(rl);
+  let hide = false;
+  out._writeToOutput = (str: string) => { if (!hide) write(str); else if (!str.includes(String.fromCharCode(10)) && !str.includes(String.fromCharCode(13))) out.output.write("*"); };
+  const lines = rl[Symbol.asyncIterator]();
+  const next = async (prompt: string) => { process.stdout.write(prompt); const r = await lines.next(); return r.done ? "" : String(r.value).trim(); };
+  try {
+    const email = env.SEED_EMAIL || (await next("Owner e-mail: "));
+    hide = true;
+    const password = env.SEED_PASSWORD || (await next("Password (hidden): "));
+    process.stdout.write(String.fromCharCode(10));
+    return { email, password };
+  } finally { rl.close(); }
+}
+
 async function main() {
   const url = env.VITE_SUPABASE_URL, key = env.VITE_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local");
-  if (!env.SEED_EMAIL || !env.SEED_PASSWORD) throw new Error("Set SEED_EMAIL and SEED_PASSWORD (the owner account) in your terminal for this run");
+  const { email, password } = await askCredentials();
+  if (!email || !password) throw new Error("E-mail and password are required");
   useWindow(new JSDOM("").window as never);
 
   const sb = createClient(url, key, { auth: { persistSession: false } });
-  const { error: signInError } = await sb.auth.signInWithPassword({ email: env.SEED_EMAIL, password: env.SEED_PASSWORD });
+  const { error: signInError } = await sb.auth.signInWithPassword({ email, password });
   if (signInError) throw new Error(`Sign-in failed: ${signInError.message}`);
   const { data: editor } = await sb.rpc("is_editor");
   if (editor !== true) throw new Error("This account is not an owner/editor yet — run the profile SQL in docs/SETUP.md first");

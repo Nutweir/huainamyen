@@ -84,10 +84,11 @@ VITE_SUPABASE_ANON_KEY=eyJ...   (the "anon public" key)
 
 ## 4. Move the migrated journal into Supabase
 
-In **your own terminal** (the password is only used for this run and is not saved):
+In **your own terminal** (PowerShell or bash). It asks for the owner e-mail and password; the password
+is hidden while you type and is not saved anywhere:
 
 ```bash
-SEED_EMAIL=you@example.com SEED_PASSWORD='your-password' npm run seed:supabase
+npm run seed:supabase
 ```
 
 It signs in as the owner and saves the journal through the same database functions the admin uses
