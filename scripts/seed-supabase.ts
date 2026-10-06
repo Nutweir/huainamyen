@@ -70,13 +70,13 @@ async function main() {
     const { data: found } = await sb.from("trips").select("id, updated_at").eq("id", t.id).maybeSingle();
     if (found && !force) { console.log(`• ${t.slug}: already there (use --force to re-save)`); continue; }
 
-    // media rows first (stories, covers and the film roll point at them)
-    const { error: mErr } = await sb.from("media_assets").upsert(bundle.media.map(m => mediaToRow({ ...m, tripId: t.id })));
-    if (mErr) throw new Error(`media: ${mErr.message}`);
+    // the trip row first (media rows belong to it), then media (the story, cover and film roll point at them)
     if (!found) {
       const { error } = await sb.from("trips").insert({ id: t.id, slug: t.slug, title: t.title, location: t.location, start_date: t.startDate, end_date: t.endDate, status: "draft" });
       if (error) throw new Error(`trip: ${error.message}`);
     }
+    const { error: mErr } = await sb.from("media_assets").upsert(bundle.media.map(m => mediaToRow({ ...m, tripId: t.id })));
+    if (mErr) throw new Error(`media: ${mErr.message}`);
     await repo.saveTrip(bundle, null);
     if (t.status === "published") await repo.publishTrip((await repo.loadTrip(t.id)).bundle, "Migrated from the static site");
     const check = await repo.loadTrip(t.id);
