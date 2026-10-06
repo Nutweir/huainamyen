@@ -14,3 +14,4 @@ test-results/
 *.HEIC
 .claude/
 reading-site.html
+exports/

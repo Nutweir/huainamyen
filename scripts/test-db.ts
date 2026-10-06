@@ -110,6 +110,19 @@ async function main() {
     const t = await db.query(`select status, published_version_id from public.trips where id = $1`, [pub]);
     assert(t.rows[0].status === "published" && t.rows[0].published_version_id, "trip not published");
   });
+  await check("publishing stores the reader card (cover) so lists need no private tables", async () => {
+    const rows = await as<{ card: { cover: { id: string } | null } }>("anon", `select card from public.trips where slug = 'published-trip'`);
+    assert(rows[0]?.card?.cover?.id === bundle.trip.coverId, `cover missing from card: ${JSON.stringify(rows[0]?.card)}`);
+  });
+  await check("media_in_use finds a photo used in a story; anon cannot ask", async () => {
+    const id = "6f1d2a9e-0c55-4e0b-9a7e-3c2f8b7d1e44";
+    assert((await as<{ media_in_use: string | null }>("owner", `select public.media_in_use($1)`, [id]))[0].media_in_use === null, "unused photo reported as used");
+    const d = await db.query(`select id from public.trip_days where trip_id = $1 limit 1`, [pub]);
+    await db.query(`insert into public.story_blocks (trip_id, day_id, type, data, sort_order) values ($1, $2, 'image', $3, 999)`, [pub, d.rows[0].id, JSON.stringify({ item: { mediaId: id } })]);
+    assert((await as<{ media_in_use: string | null }>("owner", `select public.media_in_use($1)`, [id]))[0].media_in_use, "used photo not found");
+    assert(await denied(as("anon", `select public.media_in_use($1)`, [id])), "anon can call media_in_use");
+    await db.query(`delete from public.story_blocks where trip_id = $1 and sort_order = 999`, [pub]);
+  });
 
   console.log("readers (anon)");
   await check("anon sees published trips only", async () => {

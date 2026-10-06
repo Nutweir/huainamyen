@@ -36,3 +36,6 @@ export function slugify(s: string): string {
 }
 
 export const isTime = (s: string): boolean => /^\d{1,2}:\d{2}$/.test(s);
+
+/** Deep copy of plain JSON content. Works on Vue reactive proxies, which structuredClone refuses. */
+export const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T;

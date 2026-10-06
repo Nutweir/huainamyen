@@ -60,3 +60,8 @@ export const escapeHtml = (s: string): string =>
 
 /** Keep "ๆ" on the same line as the word it repeats (Thai typesetting). */
 export const thaiNbsp = (html: string): string => html.replace(/ ๆ/g, " ๆ");
+
+/** Links people can follow: web, phone and e-mail only (no javascript:, data:, …). */
+export const safeHref = (href: string): string => (/^(https?:\/\/|tel:|mailto:)/i.test((href || "").trim()) ? href.trim() : "");
+/** Map frames may only show Google Maps embeds. */
+export const safeMapEmbed = (src: string): string => (/^https:\/\/(www\.)?google\.com\/maps\/embed\?/i.test((src || "").trim()) ? src.trim() : "");

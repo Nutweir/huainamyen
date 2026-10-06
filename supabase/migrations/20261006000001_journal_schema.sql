@@ -61,12 +61,15 @@ create table if not exists public.trips (
   sort_order integer not null default 0,
   show_placeholders boolean not null default true,
   ending jsonb,
+  -- reader-facing card (cover asset) copied from the published snapshot, so lists need no private tables
+  card jsonb,
   created_by uuid default auth.uid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint trips_slug_format check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   constraint trips_dates check (end_date is null or start_date is null or end_date >= start_date)
 );
+alter table public.trips add column if not exists card jsonb;
 create unique index if not exists trips_slug_key on public.trips (slug);
 create index if not exists trips_status_idx on public.trips (status, start_date desc);
 
@@ -323,7 +326,11 @@ begin
   insert into content_versions (trip_id, label, snapshot, is_published)
   values (p_trip_id, coalesce(nullif(p_label, ''), 'Published'), p_snapshot, true) returning id into v_id;
   update content_versions set is_published = false where trip_id = p_trip_id and id <> v_id and is_published;
-  update trips set status = 'published', published_version_id = v_id, published_at = now() where id = p_trip_id;
+  update trips set status = 'published', published_version_id = v_id, published_at = now(),
+    card = jsonb_build_object('cover', (
+      select m from jsonb_array_elements(coalesce(p_snapshot->'media', '[]')) m
+      where m->>'id' = p_snapshot->'trip'->>'coverId' limit 1))
+  where id = p_trip_id;
   return v_id;
 end $$;
 
@@ -337,6 +344,18 @@ begin
   end if;
   update trips set status = p_status where id = p_trip_id;
 end $$;
+
+-- Where is a photo used? Returns the trip title, or null when it is free to delete.
+create or replace function public.media_in_use(p_media_id uuid) returns text
+language sql stable security invoker set search_path = public as $$
+  select t.title from trips t
+  where t.cover_id = p_media_id or t.og_image_id = p_media_id
+     or exists (select 1 from trip_media tm where tm.trip_id = t.id and tm.media_id = p_media_id)
+     or exists (select 1 from story_blocks b where b.trip_id = t.id and b.data::text like '%' || p_media_id::text || '%')
+     or coalesce(t.ending::text, '') like '%' || p_media_id::text || '%'
+  limit 1
+$$;
+grant execute on function public.media_in_use(uuid) to authenticated;
 
 grant execute on function public.save_trip_content(uuid, jsonb, jsonb, jsonb, uuid[], timestamptz) to authenticated;
 grant execute on function public.publish_trip(uuid, jsonb, text) to authenticated;

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build && tsx scripts/prerender.ts",
+    "build": "vue-tsc -b && vite build && tsx --tsconfig tsconfig.node.json scripts/prerender.ts",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b",
     "lint": "eslint .",
@@ -18,8 +18,8 @@
     "test:e2e": "playwright test",
     "migrate:legacy": "tsx scripts/migrate-legacy.ts",
     "verify:migration": "tsx scripts/verify-migration.ts",
-    "seed:supabase": "tsx scripts/seed-supabase.ts",
-    "export:trip": "tsx scripts/export-trip.ts"
+    "seed:supabase": "tsx --tsconfig tsconfig.node.json scripts/seed-supabase.ts",
+    "export:trip": "tsx --tsconfig tsconfig.node.json scripts/export-trip.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
@@ -35,6 +35,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.20.5",
     "@types/pg": "^8.23.1",
     "@vitejs/plugin-vue": "^6.0.9",

@@ -14,7 +14,14 @@ export default defineConfigWithVueTs(
       "vue/singleline-html-element-content-newline": "off",
       "vue/html-self-closing": "off",
       "vue/no-v-html": "off", // every v-html in this app goes through utils/sanitize
+      "vue/multiline-html-element-content-newline": "off",
       "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_", ignoreRestSiblings: true }],
     },
+  },
+  {
+    // editor panels receive the store's working copy and edit it in place (autosave watches it)
+    files: ["src/components/editor/**/*.vue"],
+    rules: { "vue/no-mutating-props": "off" },
   },
 );
