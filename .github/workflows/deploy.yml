@@ -1,13 +1,15 @@
-name: Deploy (manual)
+name: Deploy
 
-# Publishes the Vue site to GitHub Pages. Runs ONLY when started by hand from the Actions tab,
-# and only if you type the confirmation — so the current site is never replaced by accident.
-# Before the first run: Settings → Pages → Source = "GitHub Actions" (see docs/SETUP.md, "Go live").
+# Publishes the Vue site to GitHub Pages on every push to main (main is the release branch),
+# or by hand from the Actions tab (type "deploy"). Needs Settings → Pages → Source = "GitHub Actions".
+# Production settings come from .env.production (public values only).
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "deploy" to replace the live site with this branch'
+        description: 'Type "deploy" to rebuild and publish the live site'
         required: true
 
 permissions:
@@ -21,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    if: github.event.inputs.confirm == 'deploy'
+    if: github.event_name == 'push' || github.event.inputs.confirm == 'deploy'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,13 +32,6 @@ jobs:
       - run: npm ci
       - run: npm run lint && npm run typecheck && npm test && npm run verify:migration
       - run: npm run build
-        env:
-          VITE_BASE: /huainamyen/
-          VITE_SITE_URL: https://nutweir.github.io/huainamyen
-          # Repository → Settings → Secrets and variables → Actions → Variables (the anon key is public by design)
-          VITE_BACKEND: ${{ vars.VITE_BACKEND || 'local' }}
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
 
