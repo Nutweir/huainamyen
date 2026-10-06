@@ -234,6 +234,23 @@
     return new File([blob], file.name.replace(/\.dng$/i, ".jpg"), { type: "image/jpeg", lastModified: file.lastModified });
   }
 
+  // Any picked photo, made readable by the browser: DNG → JPG, and a clear message for formats it can't open.
+  async function usableImage(file, status = () => {}) {
+    if (isDng(file)) {
+      status(`กำลังอ่านไฟล์ DNG ${file.name}…`);
+      const jpg = await dngToJpeg(file);
+      status("");
+      return jpg;
+    }
+    if (/\.(heic|heif)$/i.test(file.name) || /image\/hei[cf]/.test(file.type)) {
+      try { const b = await createImageBitmap(file); if (b.close) b.close(); return file; } // Safari can read HEIC
+      catch { throw new Error("เบราว์เซอร์นี้เปิดไฟล์ HEIC ไม่ได้ เลือกจาก Safari บน iPhone หรือแปลงเป็น JPG ก่อน"); }
+    }
+    if (!isImageFile(file)) throw new Error("ไม่รองรับไฟล์ชนิดนี้");
+    try { const b = await createImageBitmap(file); if (b.close) b.close(); } catch { throw new Error("เปิดรูปนี้ไม่ได้ ไฟล์อาจเสียหรือเป็นชนิดที่เบราว์เซอร์ไม่รองรับ"); }
+    return file;
+  }
+
   // A clip's size, length and a poster frame. Failing here means this browser can't play the file.
   function videoInfo(url, at = 1) {
     return new Promise((ok, fail) => {
@@ -403,10 +420,7 @@
         continue;
       }
       const exif = await exifDate(file);
-      if (isDng(file)) {
-        $("publish-hint").textContent = `กำลังอ่านไฟล์ DNG ${file.name}…`;
-        try { file = await dngToJpeg(file); } catch (err) { notes.push(`${file.name}: ${err.message}`); continue; }
-      } else if (!isImageFile(file)) { notes.push(`${file.name}: ไม่รองรับไฟล์ชนิดนี้`); continue; }
+      try { file = await usableImage(file, msg => { $("publish-hint").textContent = msg; }); } catch (err) { notes.push(`${file.name}: ${err.message}`); continue; }
       files.push({ id, file, url: URL.createObjectURL(file), exif, ...(await naturalSize(file)) });
     }
     renderFiles();
@@ -690,7 +704,7 @@
         return `<div class="file" data-item="${esc(id)}"><div class="file-side"><span class="empty-thumb big">+</span><span data-crop-slot></span></div><div>
           <div class="file-head"><span>ช่องว่าง: ${esc(x.placeholder)}</span></div>
           <p class="size-line" data-size></p>
-          <label class="field"><span>ใส่รูปลงช่องนี้</span><input type="file" accept="image/*" data-pick></label>
+          <label class="field"><span>ใส่รูปลงช่องนี้</span><input type="file" accept="image/*,.dng,image/x-adobe-dng" data-pick></label>
           ${metaFields({ caption: x.placeholder }, null)}</div></div>`;
       }
       const ref = filled || (typeof x === "string" ? x : x.image ?? x.photo);
@@ -705,7 +719,7 @@
           <div class="file-head"><span>${esc(im.src || "")}</span></div>
           <p class="size-line" data-size></p>
           ${metaFields(im, null)}
-          <label class="field"><span>เปลี่ยนเป็นรูปใหม่</span><input type="file" accept="image/*" data-pick><small>caption และข้อมูลด้านบนยังอยู่เหมือนเดิม</small></label>
+          <label class="field"><span>เปลี่ยนเป็นรูปใหม่</span><input type="file" accept="image/*,.dng,image/x-adobe-dng" data-pick><small>caption และข้อมูลด้านบนยังอยู่เหมือนเดิม</small></label>
           ${occ.kind === "cover" ? "" : `<label class="check"><input type="checkbox" data-k="hidden"${im.hidden ? " checked" : ""}> ซ่อนรูปนี้ (ทุกที่ รวมถึงม้วนฟิล์ม)</label>`}
         </div>
       </div>`;
@@ -841,13 +855,23 @@
   $("editor-body").addEventListener("change", async e => {
     if (e.target.matches('[data-b="layout"]')) return editorBadges();
     if (!e.target.matches("[data-pick]") || !e.target.files[0]) return;
-    const box = e.target.closest("[data-item]"), file = e.target.files[0];
+    const box = e.target.closest("[data-item]"), original = e.target.files[0], input = e.target;
+    const exif = await exifDate(original);
+    let file;
+    try {
+      file = await usableImage(original, msg => { box.querySelector("[data-size]").textContent = msg; });
+    } catch (err) {
+      alert(`${original.name}: ${err.message}`);
+      input.value = "";
+      delete editing.picks[box.dataset.item];
+      editorBadges();
+      return;
+    }
     const pick = editing.picks[box.dataset.item] = { file, url: URL.createObjectURL(file), crop: null, ...(await naturalSize(file)) };
     setPreview(box, pick.url);
     const side = box.querySelector(".file-side");
     if (!side.querySelector("[data-crop-item]")) side.insertAdjacentHTML("beforeend", `<button class="btn ghost small" type="button" data-crop-item>ครอป</button>`);
     editorBadges();
-    const exif = await exifDate(file);
     if (exif) {
       ["time", "date"].forEach(k => { const input = box.querySelector(`[data-k="${k}"]`); if (input && !input.value) input.value = exif[k]; });
     }
