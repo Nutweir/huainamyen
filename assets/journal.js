@@ -44,7 +44,7 @@
       let group = [];
       const flush = () => { if (group.length) out.push({ images: group }); group = []; };
       (list || []).forEach(x => {
-        if (x && typeof x === "object" && x.layout) { flush(); out.push(x); }
+        if (x && typeof x === "object" && (x.layout || x.video)) { flush(); out.push(x); }
         else group.push(x);
       });
       flush();
@@ -66,7 +66,7 @@
       if (b.video) {
         const v = b.video;
         const src = I.url(v.src);
-        return `<figure class="ph ph--video" data-reveal><video controls playsinline preload="none"${v.poster ? ` data-poster="${I.url(v.poster)}"` : ""} width="${v.w || 540}" height="${v.h || 960}" aria-label="${attr(v.label)}"><source src="${src}" type="video/mp4">เบราว์เซอร์นี้เล่นวิดีโอไม่ได้ <a href="${src}">เปิดคลิป</a></video><figcaption>${v.caption ? `<span class="hand">${v.caption}</span>` : ""}<a class="ph-dl" href="${src}" download>ดาวน์โหลดคลิป</a></figcaption></figure>`;
+        return `<figure class="ph ph--video" data-reveal><video controls muted loop playsinline preload="none"${v.poster ? ` data-poster="${I.url(v.poster)}"` : ""} width="${v.w || 540}" height="${v.h || 960}" aria-label="${attr(v.label)}"><source src="${src}"${/\.webm$/i.test(src) ? ' type="video/webm"' : /\.mov$/i.test(src) ? "" : ' type="video/mp4"'}>เบราว์เซอร์นี้เล่นวิดีโอไม่ได้ <a href="${src}">เปิดคลิป</a></video><figcaption>${v.caption ? `<span class="hand">${v.caption}</span>` : ""}<a class="ph-dl" href="${src}" download>ดาวน์โหลดคลิป</a></figcaption></figure>`;
       }
       return "";
     }
@@ -227,7 +227,7 @@
     setupMoods();
     setupNav();
     setupReveal();
-    setupPosters();
+    setupVideos();
     setupLightbox();
     setupRoll();
     setupMap(T);
@@ -309,13 +309,26 @@
     document.querySelectorAll("[data-reveal]").forEach(el => io.observe(el));
   }
 
-  // Video posters wait until the clip is close to the screen.
-  function setupPosters() {
-    const vids = document.querySelectorAll("video[data-poster]");
-    const load = v => { v.poster = v.dataset.poster; v.removeAttribute("data-poster"); };
-    if (!("IntersectionObserver" in window)) return vids.forEach(load);
-    const io = new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { load(en.target); io.unobserve(en.target); } }), { rootMargin: "600px 0px" });
-    vids.forEach(v => io.observe(v));
+  // Clips start (muted, looping) once you scroll to them and pause when you move on.
+  // Posters load only when a clip is near. Reduced-motion readers press play themselves.
+  function setupVideos() {
+    const vids = [...document.querySelectorAll(".ph--video video")];
+    if (!vids.length) return;
+    const loadPoster = v => { if (v.dataset.poster) { v.poster = v.dataset.poster; v.removeAttribute("data-poster"); } };
+    if (!("IntersectionObserver" in window)) return vids.forEach(loadPoster);
+    const near = new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { loadPoster(en.target); near.unobserve(en.target); } }), { rootMargin: "600px 0px" });
+    vids.forEach(v => near.observe(v));
+    if (reducedMotion.matches) return;
+    vids.forEach(v => {
+      v.addEventListener("pause", () => { if (!v._autoPause && !v.ended) v._userPaused = true; v._autoPause = false; });
+      v.addEventListener("play", () => { v._userPaused = false; });
+    });
+    const inView = new IntersectionObserver(entries => entries.forEach(({ target: v, isIntersecting }) => {
+      // If the reader turned sound on, try with sound; browsers may refuse, then it plays muted.
+      if (isIntersecting && !v._userPaused) v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+      else if (!isIntersecting && !v.paused) { v._autoPause = true; v.pause(); }
+    }), { threshold: 0.6 });
+    vids.forEach(v => inView.observe(v));
   }
 
   function setupLightbox() {
@@ -488,6 +501,11 @@
     const B = O.blocks || {};
     if (!Object.keys(B).length) return;
     const apply = (host, list, deco) => (list || []).forEach((b, i) => {
+      if (b && b.video) {
+        const o = B[`${host}:video:${b.video.src}`];
+        if (o) list[i] = o.hidden ? {} : { ...b, video: { ...b.video, ...(o.video || {}) } };
+        return;
+      }
       if (!isImg(b)) return;
       const o = B[JI.blockId(host, b, deco)];
       if (!o) return;

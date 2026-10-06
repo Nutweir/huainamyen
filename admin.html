@@ -65,6 +65,36 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
 .editor h2 { font-family: var(--f-display); font-size: 1.2rem; margin: 0 0 1rem; }
 .editor-actions { position: sticky; bottom: -1.25rem; background: var(--page); padding: 1rem 0; margin-top: .5rem; border-top: 1px solid var(--rule); }
 .btn.danger { color: #a2412b; border-color: #e3c4ba; margin-left: auto; }
+.file-side { display: grid; gap: .5rem; align-content: start; justify-items: center; }
+.link-btn { font: inherit; font-size: .82rem; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; min-height: 32px; }
+.size-line { display: flex; flex-wrap: wrap; gap: .2rem .6rem; margin: 0 0 .7rem; font-size: .82rem; line-height: 1.55; }
+.size-line:empty { display: none; }
+.size-info { color: var(--muted); font-variant-numeric: tabular-nums; }
+.size-check.ok { color: var(--accent); }
+.size-check.warn { color: #9a5a12; }
+.spec { margin: 0 0 1rem; padding: .6rem .8rem; font-size: .88rem; line-height: 1.6; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.spec:empty { display: none; }
+.crop-ratios { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .9rem; }
+.chip { font: inherit; font-size: .85rem; min-height: 40px; padding: 0 .9rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--page); color: var(--ink); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.crop-stage { display: grid; place-items: center; background: #1a1814; border-radius: 4px; padding: 10px; }
+.crop-wrap { position: relative; overflow: hidden; touch-action: none; user-select: none; line-height: 0; }
+.crop-wrap img { display: block; max-width: 100%; max-height: min(58dvh, 560px); width: auto; height: auto; pointer-events: none; }
+.crop-box { position: absolute; box-shadow: 0 0 0 9999px rgb(0 0 0 / .55); outline: 1.5px solid #fff; cursor: move; touch-action: none;
+  background-image: linear-gradient(rgb(255 255 255 / .35) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / .35) 1px, transparent 1px);
+  background-size: 33.333% 33.333%; background-position: -1px -1px; }
+.crop-box:focus-visible { outline: 3px solid var(--accent); }
+.crop-box span { position: absolute; width: 26px; height: 26px; border: 3px solid #fff; }
+.crop-box [data-h="nw"] { left: -3px; top: -3px; border-right: 0; border-bottom: 0; cursor: nwse-resize; }
+.crop-box [data-h="ne"] { right: -3px; top: -3px; border-left: 0; border-bottom: 0; cursor: nesw-resize; }
+.crop-box [data-h="sw"] { left: -3px; bottom: -3px; border-right: 0; border-top: 0; cursor: nesw-resize; }
+.crop-box [data-h="se"] { right: -3px; bottom: -3px; border-left: 0; border-top: 0; cursor: nwse-resize; }
+.crop-box span::after { content: ""; position: absolute; inset: -12px; } /* bigger touch target */
+.file-side video { width: 96px; height: 120px; object-fit: cover; background: #111; }
+.tag { font-size: .75rem; color: var(--muted); }
+.clip-preview { display: grid; place-items: center; background: #111; border-radius: 4px; }
+.clip-preview video { max-width: 100%; max-height: min(52dvh, 480px); }
+@media (max-width: 520px) { .file-side video { width: 72px; height: 90px; } }
 [hidden] { display: none !important; }
 @media (max-width: 520px) {
   .grid2 { grid-template-columns: 1fr; }
@@ -85,7 +115,7 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
 <main class="admin flow">
   <header>
     <p class="kicker">Admin</p>
-    <h1>อัปโหลดรูปลงบันทึก</h1>
+    <h1>อัปโหลดรูปและคลิปลงบันทึก</h1>
     <p class="lede">เลือกรูป เลือกช่วงในเรื่อง ใส่คำบรรยาย แล้วกดเผยแพร่ เว็บจะอัปเดตภายในประมาณ 1 นาที</p>
   </header>
 
@@ -117,7 +147,7 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
   </section>
 
   <section class="card" id="upload" aria-labelledby="upload-t">
-    <h2 id="upload-t">2 · เพิ่มรูป</h2>
+    <h2 id="upload-t">2 · เพิ่มรูปหรือคลิป</h2>
     <form id="form">
       <div class="grid2">
         <label class="field"><span>ทริป</span><select id="trip"></select></label>
@@ -133,9 +163,9 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
       </fieldset>
 
       <label class="drop" id="drop">
-        <input type="file" id="files" accept="image/jpeg,image/png,image/webp,image/*" multiple>
-        <b>แตะเพื่อเลือกรูป หรือลากรูปมาวาง</b>
-        <span class="hint">JPG, PNG, WebP · เลือกได้หลายรูป · ระบบจะย่อรูปและลบข้อมูล GPS ให้</span>
+        <input type="file" id="files" accept="image/*,.dng,image/x-adobe-dng,video/mp4,video/webm,video/quicktime,video/*" multiple>
+        <b>แตะเพื่อเลือกรูปหรือคลิป หรือลากมาวาง</b>
+        <span class="hint">รูป JPG, PNG, WebP, DNG · คลิป MP4 (ไม่เกิน 50 MB) · เลือกได้หลายไฟล์ · ระบบจะย่อรูปและลบข้อมูล GPS ให้</span>
       </label>
       <div class="files" id="file-list"></div>
 
@@ -153,6 +183,7 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
             </select>
           </label>
         </div>
+        <p class="spec" id="spec-hint"></p>
         <label class="field" id="group-caption-box" hidden><span>คำบรรยายของชุดภาพ</span><input type="text" id="group-caption" placeholder="เช่น บ่ายที่บ้านนาเกียน"></label>
         <label class="check" id="roll-box"><input type="checkbox" id="add-roll" checked> เพิ่มในม้วนฟิล์มท้ายเรื่องด้วย</label>
       </div>
@@ -166,14 +197,36 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
   </section>
 
   <section class="card" aria-labelledby="list-t">
-    <h2 id="list-t">3 · รูปทั้งหมดในทริป</h2>
-    <p class="hint" style="margin-bottom:1rem">เรียงตามเนื้อเรื่อง กด "แก้ไข" เพื่อเปลี่ยน caption เวลา สถานที่ รูปแบบการแสดง เปลี่ยนรูปใหม่ ซ่อนรูป หรือเติมรูปลงช่องว่าง</p>
+    <h2 id="list-t">3 · รูปและคลิปทั้งหมดในทริป</h2>
+    <p class="hint" style="margin-bottom:1rem">เรียงตามเนื้อเรื่อง กด "แก้ไข" เพื่อเปลี่ยน caption เวลา สถานที่ รูปแบบการแสดง ครอป เปลี่ยนรูปหรือคลิปใหม่ เลือกภาพปกคลิป ซ่อน หรือเติมรูปลงช่องว่าง</p>
     <ul class="uploads" id="uploads"></ul>
     <p class="hint" id="uploads-empty">ยังไม่มี</p>
   </section>
 
   <p class="hint"><a href="index.html">← กลับไปหน้าบันทึก</a></p>
 </main>
+
+<dialog class="editor cropper" id="cropper" aria-labelledby="crop-t">
+  <form method="dialog">
+    <p class="kicker">ครอปรูป</p>
+    <h2 id="crop-t">ลากกรอบเพื่อเลือกส่วนที่ต้องการ</h2>
+    <p class="spec" id="crop-spec"></p>
+    <div class="crop-ratios" id="crop-ratios" role="group" aria-label="สัดส่วนของกรอบ"></div>
+    <div class="crop-stage">
+      <div class="crop-wrap">
+        <img id="crop-img" alt="รูปที่กำลังครอป">
+        <div class="crop-box" id="crop-box" tabindex="0" role="slider" aria-label="กรอบครอป · ลากเพื่อย้าย · ลากมุมเพื่อย่อขยาย · ใช้ปุ่มลูกศรเพื่อเลื่อน">
+          <span data-h="nw"></span><span data-h="ne"></span><span data-h="sw"></span><span data-h="se"></span>
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="crop-info"></p>
+    <div class="row editor-actions">
+      <button class="btn" id="crop-ok" type="button">ใช้ส่วนนี้</button>
+      <button class="btn ghost" id="crop-cancel" type="button">ยกเลิก</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog class="editor" id="editor" aria-labelledby="editor-title">
   <form method="dialog">
