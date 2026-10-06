@@ -12,7 +12,7 @@ import type { MediaAsset, SiteSettings, TripBundle } from "../src/types/content"
 
 const DIST = resolve("dist");
 const env = { ...loadEnv(".env"), ...loadEnv(".env.production"), ...loadEnv(".env.local"), ...process.env } as Record<string, string | undefined>;
-const SITE = (env.VITE_SITE_URL || "https://nutweir.github.io/huainamyen").replace(/\/$/, "");
+const SITE = (env.VITE_SITE_URL || "https://journal.nutweir.com").replace(/\/$/, "");
 const SUPABASE = env.VITE_BACKEND !== "local" && env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY ? { url: env.VITE_SUPABASE_URL.replace(/\/$/, ""), key: env.VITE_SUPABASE_ANON_KEY } : null;
 
 function loadEnv(file: string): Record<string, string> {

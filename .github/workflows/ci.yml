@@ -28,7 +28,7 @@ jobs:
       - run: npm run build
         env:
           VITE_BACKEND: local
-          VITE_SITE_URL: https://nutweir.github.io/huainamyen
+          VITE_SITE_URL: https://journal.nutweir.com
 
   database:
     runs-on: ubuntu-latest
