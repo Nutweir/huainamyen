@@ -1,0 +1,48 @@
+/* Tailwind for the admin (no preflight: public pages keep the diary stylesheet exactly as before). */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --font-display: "Noto Serif Thai", Georgia, serif;
+  --font-sans: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-latin: "Cormorant Garamond", "Noto Serif Thai", Georgia, serif;
+  --font-hand: "Sriracha", "Noto Serif Thai", cursive;
+  --color-paper: #f6f1e7;
+  --color-ink: #23211d;
+  --color-muted: #6b6457;
+  --color-rule: #ddd4c3;
+  --color-forest: #3f5e45;
+  --color-earth: #7b5634;
+  --color-danger: #a2412b;
+}
+
+/* Admin base: a small, scoped reset instead of Tailwind's global preflight. */
+@layer base {
+  .admin-app { font-family: var(--font-sans); color: var(--color-ink); background: #faf8f3; min-height: 100vh; line-height: 1.6; }
+  .admin-app *, .admin-app *::before, .admin-app *::after { box-sizing: border-box; }
+  .admin-app h1, .admin-app h2, .admin-app h3, .admin-app h4, .admin-app p { margin: 0; }
+  .admin-app ul, .admin-app ol { margin: 0; padding: 0; list-style: none; }
+  .admin-app button, .admin-app input, .admin-app select, .admin-app textarea { font: inherit; color: inherit; }
+  .admin-app button { cursor: pointer; background: none; border: 0; padding: 0; }
+  .admin-app img, .admin-app video { display: block; max-width: 100%; }
+  .admin-app a { color: inherit; text-decoration: none; }
+  .admin-app :focus-visible { outline: 2px solid var(--color-forest); outline-offset: 2px; border-radius: 4px; }
+}
+
+/* shared admin pieces */
+@layer components {
+  .admin-app .field { display: grid; gap: .3rem; }
+  .admin-app .field > span { font-size: .85rem; font-weight: 500; }
+  .admin-app .input { width: 100%; min-height: 42px; padding: .45rem .7rem; border: 1px solid var(--color-rule); border-radius: 8px; background: #fff; }
+  .admin-app textarea.input { min-height: 80px; resize: vertical; }
+  .admin-app .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 40px; padding: 0 1rem; border-radius: 999px; font-weight: 600; font-size: .9rem; background: var(--color-ink); color: #fff; }
+  .admin-app .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .admin-app .btn-ghost { background: transparent; color: var(--color-ink); border: 1px solid var(--color-rule); font-weight: 500; }
+  .admin-app .btn-danger { background: transparent; color: var(--color-danger); border: 1px solid #e7c8bf; font-weight: 500; }
+  .admin-app .card { background: #fff; border: 1px solid #ece6da; border-radius: 12px; }
+  .admin-app .chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+  .admin-app .rich { min-height: 2.2em; outline: none; line-height: 1.8; }
+  .admin-app .rich p { margin: 0; }
+  .admin-app .ProseMirror:focus { outline: none; }
+}
