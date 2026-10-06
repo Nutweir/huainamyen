@@ -1,10 +1,121 @@
-# Adding a trip
+# คู่มือเพิ่มรูปและทริปใหม่
 
-1. Put the photos in `img/` (or a subfolder, then set `imageBase` to match).
-2. Copy `huai-nam-yen.js` to `trips/<slug>.js`. Change the `slug`, the dates and the `url`, then write the chapters.
-   The comment at the top of that file lists the available story blocks.
-3. Copy `index.html` to `<slug>.html`. Change `data-trip="<slug>"` and the `trips/<slug>.js` script tag, and update the title and description.
-4. Add `<script src="trips/<slug>.js" defer></script>` to `journeys.html`. The trip shows up there grouped by year.
+ทุกทริปมีโฟลเดอร์ของตัวเองใน `trips/<slug>/` ทั้งข้อมูลและรูปอยู่ในโฟลเดอร์นั้น เพิ่มรูปหรือทริปใหม่ได้โดยไม่ต้องแก้โค้ด
 
-The renderer (`assets/journal.js`) and styles (`assets/journal.css`) are shared, so a new trip needs no new code.
-Pages can also be opened as `index.html?trip=<slug>` when that trip's script is included.
+```
+trips/huai-nam-yen/
+  trip.js        ← ข้อมูลทริป (แก้ไฟล์นี้)
+  images.js      ← สร้างอัตโนมัติ ห้ามแก้เอง
+  cover/         ← รูปหน้าปก
+  day-01/        ← รูปวันที่ 1
+  day-02/        ← รูปวันที่ 2
+  details/       ← รูปรายละเอียด/รูปตกแต่ง (รองเท้า กาแฟ ป้าย บัตร …)
+  video/         ← คลิปและรูป poster
+  _sized/        ← รูปย่อที่สคริปต์สร้างให้ ห้ามแก้เอง
+```
+
+## เพิ่มรูปใหม่ (4 ขั้น)
+
+1. วางไฟล์ JPG/PNG/WebP ลงโฟลเดอร์ของทริป เช่น `trips/huai-nam-yen/day-02/shoes.jpg` (ไฟล์ DNG จะถูกแปลงเป็น JPG ให้ ส่วน HEIC ให้ export เป็น JPG ก่อน)
+2. รันสคริปต์ (ต้องมี `pip install pillow` ครั้งเดียว)
+   ```
+   python tools/prepare_images.py huai-nam-yen
+   ```
+   สคริปต์จะย่อรูปที่ใหญ่เกิน ลบ EXIF/GPS สร้างรูปขนาดเล็กสำหรับมือถือ และบันทึกขนาดรูปลง `images.js`
+3. ตั้งชื่อรูปใน `trip.js` ส่วน `images` (path นับจากโฟลเดอร์ทริป)
+   ```js
+   "shoes": { src: "day-02/shoes.jpg", alt: "รองเท้าเดินป่าเปื้อนโคลน" },
+   ```
+4. ใส่รูปลงในเรื่อง ตรง event ที่ต้องการ (ใน `content`)
+   ```js
+   { image: "shoes", layout: "diary-photo", caption: "หลังเดินกลับ" },
+   ```
+
+จะเขียนรูปตรง ๆ ในเรื่องโดยไม่ตั้งชื่อก่อนก็ได้: `{ image: { src: "day-02/shoes.jpg", alt: "..." }, layout: "polaroid" }`
+
+## Layout presets
+
+| layout | ใช้กับ | ลักษณะ |
+|---|---|---|
+| `hero` | 1 รูป | เต็มจอ โหลดก่อนรูปอื่น ใช้กับภาพเปิดเรื่องเท่านั้น |
+| `full` | 1 รูป | กว้างเต็มขอบจอ บนจอใหญ่ crop แบบภาพยนตร์ |
+| `spotlight` | 1 รูป | แสดงรูปแนวตั้งเต็มใบบนแถบสี (`tone: "forest"` หรือ `"night"`) |
+| `background` | 1 รูป | แถบภาพบรรยากาศ ใส่ข้อความทับได้ด้วย `text: ["…"]` |
+| `wide` | 1 รูป | กว้างกว่าคอลัมน์ข้อความ ครอปเป็น 3:2 |
+| `inline` | 1 รูป | อยู่ในคอลัมน์ข้อความ แสดงตามสัดส่วนจริง |
+| `portrait` | 1 รูป | รูปแนวตั้ง กว้างไม่เกิน 460px |
+| `polaroid` | 1 รูป | รูปโพลารอยด์ ครอปสี่เหลี่ยมจัตุรัส เอียงเล็กน้อย |
+| `diary-photo` | 1 รูป | รูปเล็กแปะเทปเหมือนในสมุด |
+| `two-column` | 2 รูป | สองรูปคู่กัน รูปขวาเยื้องลงเล็กน้อย |
+| `collage` | 3–4 รูป | 3 รูป = ใหญ่ 1 + เล็ก 2, 4 รูป = ตาราง 2×2 |
+| `memory-stack` | 2–4 รูป | รูปโพลารอยด์วางซ้อนกัน |
+| `film-strip` | หลายรูป | แถบฟิล์มเลื่อนดูในเนื้อเรื่อง |
+| `gallery` | หลายรูป | ตารางรูปเล็ก แบบ contact sheet |
+
+**ไม่ใส่ layout ก็ได้:** 1 รูป → แนวนอนเป็น `wide` แนวตั้งเป็น `portrait`, 2 รูป → `two-column`, 3–4 รูป → `collage`, 5 รูปขึ้นไป → `gallery`
+
+หลายรูปเขียนแบบนี้: `{ images: ["a", "b", "c"], layout: "collage", caption: "บ่ายที่บ้านนาเกียน" }`
+
+## ตัวเลือกของแต่ละรูป (ไม่ใส่ก็ได้ ระบบมีค่ามาตรฐานให้)
+
+| ตัวเลือก | ตัวอย่าง | ผล |
+|---|---|---|
+| `caption` | `"แสงสุดท้ายก่อนเย็น"` | คำบรรยายลายมือใต้รูป |
+| `time` | `"17:42"` | เวลา ↓ |
+| `location` | `"Ban Na Kian"` | สถานที่ ↓ |
+| `date` | `"2026-10-03"` | ถ้าไม่ใส่ ใช้วันที่ของวันนั้น ↓ |
+| `camera`, `note` | `"Ricoh GR III"` | แสดงเฉพาะตอนเปิดดูภาพใหญ่ |
+| `position` | `left` `right` `center` `bleed-left` `bleed-right` | ตำแหน่ง ถ้าเป็น `left`/`right` กับ `polaroid` `portrait` `diary-photo` รูปจะวางข้างข้อความ 3 ย่อหน้าถัดไป (เปลี่ยนจำนวนด้วย `with: 2`) |
+| `rotation` | `3` | องศาที่เอียง |
+| `size` | `"s"` `"m"` `"l"` | ขนาดของรูปเล็ก (polaroid, diary-photo, portrait, รูปตกแต่ง) |
+| `aspectRatio` | `"21 / 9"` | บังคับสัดส่วนการครอป |
+| `focus` | `"50% 30%"` | จุดที่ให้อยู่กลางภาพเวลาถูกครอป |
+| `priority` | `true` | โหลดทันที ใช้เฉพาะรูปที่เห็นตั้งแต่เปิดหน้า |
+| `expandable` | `false` | ปิดไม่ให้กดดูภาพใหญ่ |
+
+↓ วันที่ เวลา และสถานที่จะแสดงเป็นบรรทัดเล็ก ๆ เหมือนเขียนหลังรูป เช่น `03 OCT 2026 · 17:42 · BAN NA KIAN` จะแสดงเมื่อใส่ `time`, `location` หรือ `date` อย่างใดอย่างหนึ่ง
+
+## รูปตกแต่ง (decorative)
+
+รูปเล็กที่แปะข้างบันทึก ไม่ใช่รูปหลักของเรื่อง ใส่ไว้ที่ event (หรือ chapter) ด้วย `decorations`
+
+```js
+{
+  id: "d2-0930", time: "09:30", title: "…",
+  decorations: [
+    { image: "trail-ticket", caption: "บัตรน้ำตก" },
+    { image: "shoes", position: "left", rotation: -4 }
+  ],
+  content: [ … ]
+}
+```
+
+- บนจอกว้าง (1480px ขึ้นไป) จะอยู่ที่ขอบซ้าย/ขวานอกคอลัมน์รูป ถ้าไม่ระบุ `position` จะสลับขวา-ซ้ายให้เอง
+- บนจอที่เล็กกว่า จะเรียงเป็นแถวรูปเล็กท้าย event
+- ถ้าไม่มีรูป หรือไฟล์หาย จะไม่แสดงอะไรเลย ไม่เหลือช่องว่าง
+- กดดูภาพใหญ่ไม่ได้ เว้นแต่ใส่ `expandable: true`
+
+## เปิด/ปิด Lightbox
+
+- รูปในเรื่องทุกแบบกดดูภาพใหญ่ได้ ยกเว้น `background`
+- ปิดเฉพาะรูป: `expandable: false`
+- เปิดให้รูปตกแต่งหรือ `background`: `expandable: true`
+- ใน Lightbox ใช้ปุ่ม ← → บนคีย์บอร์ด ปัดซ้าย/ขวาบนมือถือ หรือกด Esc เพื่อปิด
+
+## รูปท้าย event และรูปเปิด chapter
+
+- `images: [...]` ที่ event: รูปจะต่อท้ายข้อความของ event นั้น รูปที่ระบุ `layout` เองจะแสดงเดี่ยว ที่เหลือจัดกลุ่มให้อัตโนมัติ
+- `images: [...]` และ `decorations: [...]` ที่ chapter: จะอยู่ในหน้าเปิดของวันนั้น
+
+## ช่องรูปว่าง และรูปที่หาย
+
+- `{ placeholder: "น้องแพะ 5 วัน" }` คือช่องรอแปะรูป ซ่อนทั้งหมดได้ด้วย `showPlaceholders: false`
+- ถ้าไฟล์โหลดไม่ได้ จะแสดงกระดาษเปล่าพร้อม alt text แทนไอคอนรูปเสีย ส่วนรูปตกแต่งจะหายไปเฉย ๆ
+- ตอนเปิดดูบนเครื่องตัวเอง (localhost) console จะเตือนชื่อรูปที่ไม่มีใน `images` layout ที่สะกดผิด รูปที่ยังไม่มีขนาด และรูปที่ไม่มี alt
+
+## เพิ่มทริปใหม่
+
+1. สร้างโฟลเดอร์ `trips/<slug>/` แล้วคัดลอก `trip.js` จากทริปเดิมมาแก้ `slug`, `base: "trips/<slug>/"`, วันที่ และเนื้อเรื่อง
+2. วางรูปลงในโฟลเดอร์ย่อย แล้วรัน `python tools/prepare_images.py <slug>`
+3. คัดลอก `index.html` เป็น `<slug>.html` แล้วเปลี่ยน `data-trip`, script ทั้งสองบรรทัด (`trip.js`, `images.js`) และ title/description
+4. ใส่ script สองบรรทัดเดียวกันใน `journeys.html` ทริปจะไปขึ้นในหน้า My Journeys เรียงตามปี

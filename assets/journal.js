@@ -2,6 +2,7 @@
  * Journal renderer. Reads trips pushed onto window.JOURNAL_TRIPS (trips/*.js) and renders
  * either one trip as a diary (<body data-page="trip" data-trip="slug">) or the list of
  * all trips (<body data-page="journeys">). No build step, no dependencies.
+ * Photos are handled by assets/journal-images.js (load it first).
  */
 (() => {
   "use strict";
@@ -22,61 +23,37 @@
     if (s.y === e.y) return `${pad(s.d)} ${mon(s.m)} – ${pad(e.d)} ${mon(e.m)}${year}`;
     return `${pad(s.d)} ${mon(s.m)} ${s.y} – ${pad(e.d)} ${mon(e.m)} ${e.y}`;
   }
-  const stampDate = s => { const { y, m, d } = ymd(s); return `${pad(d)} ${MONTHS[m - 1].slice(0, 3)} ${y}`; };
 
   /* ---------- trip page ---------- */
 
   function renderTrip(T) {
-    const image = key => {
-      const i = T.images[key];
-      if (!i) throw new Error(`Unknown image "${key}" in trip ${T.slug}`);
-      return i;
-    };
-    const img = (key, { eager = false } = {}) => {
-      const i = image(key);
-      return `<img src="${T.imageBase}${i.src}" alt="${attr(i.alt)}" width="${i.w}" height="${i.h}"${eager ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async"${i.focus ? ` style="object-position:${i.focus}"` : ""}>`;
-    };
-    // Every photo opens in the lightbox; the group decides what the arrows step through.
-    const openable = (key, inner, caption = "", group = "story") =>
-      `<button type="button" class="ph-open" data-lb="${T.imageBase}${image(key).src}" data-lb-group="${group}" data-lb-caption="${attr(caption)}" aria-label="ขยายภาพ: ${attr(image(key).alt)}">${inner}</button>`;
-
+    const I = window.JournalImages.create(T);
     let chapter = null;
 
-    function figcaption(b) {
-      const text = b.caption ? `<span class="${b.hand ? "hand" : "ph-cap"}">${b.caption}</span>` : "";
-      const meta = b.meta ? `<span class="ph-meta">${[stampDate(chapter.date), b.time, b.meta].filter(Boolean).join(" · ")}</span>` : "";
-      return text || meta ? `<figcaption>${text}${meta}</figcaption>` : "";
+    // Older trip files used { photo } / { photos }; read them as { image } / { images }.
+    function asImageBlock(b) {
+      if (b.photo) { const { photo, ...rest } = b; return { image: photo, ...rest }; }
+      if (b.photos) { const { photos, ...rest } = b; return { ...rest, images: photos.map(x => x.photo ? { ...x, image: x.photo } : x) }; }
+      return b;
     }
+    const isImage = b => b.image || b.images || b.photo || b.photos || b.placeholder || b.src;
 
-    function placeholder(b, layout = b.layout || "inline") {
-      if (!T.showPlaceholders) return "";
-      return `<figure class="ph ph--${layout} ph--empty${b.side ? ` ph--${b.side}` : ""}"><div class="slot"><span class="slot-label">ยังไม่ได้แปะรูป</span><span class="hand">${b.placeholder}</span></div></figure>`;
-    }
-
-    function photo(b) {
-      const layout = b.layout || "inline";
-      const i = image(b.photo);
-      const cls = ["ph", `ph--${layout}`, b.side && `ph--${b.side}`, b.tone && `tone-${b.tone}`].filter(Boolean).join(" ");
-      const reveal = ` data-reveal${b.reveal ? `="${b.reveal}"` : ""}`;
-      return `<figure class="${cls}"${reveal} style="--r:${(i.h / i.w).toFixed(4)}">${openable(b.photo, img(b.photo), b.caption)}${figcaption(b)}</figure>`;
-    }
-
-    function photos(b) {
-      const items = b.photos.map(p => p.placeholder
-        ? (T.showPlaceholders ? `<div class="slot"><span class="slot-label">ยังไม่ได้แปะรูป</span><span class="hand">${p.placeholder}</span></div>` : "")
-        : `<div class="set-item">${openable(p.photo, img(p.photo), p.caption)}${p.caption ? `<span class="set-cap">${p.caption}</span>` : ""}</div>`
-      ).filter(Boolean);
-      if (!items.length) return "";
-      const layout = items.length === 1 ? "single" : b.layout;
-      const empty = b.photos.every(p => p.placeholder) ? " set--empty" : "";
-      return `<figure class="set set--${layout}${empty}" data-reveal><div class="set-grid">${items.join("")}</div>${b.caption ? `<figcaption class="hand">${b.caption}</figcaption>` : ""}</figure>`;
+    // event.images / chapter.images: photos with their own layout stand alone, the rest are grouped automatically.
+    function imageBlocks(list) {
+      const out = [];
+      let group = [];
+      const flush = () => { if (group.length) out.push({ images: group }); group = []; };
+      (list || []).forEach(x => {
+        if (x && typeof x === "object" && x.layout) { flush(); out.push(x); }
+        else group.push(x);
+      });
+      flush();
+      return out;
     }
 
     function block(b) {
       if (typeof b === "string") return `<p>${b}</p>`;
-      if (b.photo) return photo(b);
-      if (b.photos) return photos(b);
-      if (b.placeholder) return placeholder(b);
+      if (isImage(b)) return I.block(asImageBlock(b), chapter && chapter.date);
       if (b.note) return `<p class="note hand">${b.note}</p>`;
       if (b.thought) return `<p class="thought${b.size ? ` thought--${b.size}` : ""}" data-reveal>${lines(b.thought)}</p>`;
       if (b.quote) return `<figure class="said" data-reveal><blockquote><p>${lines(b.quote)}</p></blockquote><figcaption>— ${b.by}</figcaption></figure>`;
@@ -88,23 +65,23 @@
       if (b.stamp) return `<p class="stamp" aria-label="${attr(`${b.stamp.value} ${b.stamp.label} ${b.stamp.sub || ""}`)}"><b>${b.stamp.value}</b><span>${b.stamp.label}</span>${b.stamp.sub ? `<small>${b.stamp.sub}</small>` : ""}</p>`;
       if (b.video) {
         const v = b.video;
-        return `<figure class="ph ph--video" data-reveal><video controls playsinline preload="none" poster="${v.poster}" width="${v.w}" height="${v.h}" aria-label="${attr(v.label)}"><source src="${v.src}" type="video/mp4">เบราว์เซอร์นี้เล่นวิดีโอไม่ได้ <a href="${v.src}">เปิดคลิป</a></video><figcaption><span class="hand">${v.caption}</span><a class="ph-dl" href="${v.src}" download>ดาวน์โหลดคลิป</a></figcaption></figure>`;
+        const src = I.url(v.src);
+        return `<figure class="ph ph--video" data-reveal><video controls playsinline preload="none"${v.poster ? ` data-poster="${I.url(v.poster)}"` : ""} width="${v.w || 540}" height="${v.h || 960}" aria-label="${attr(v.label)}"><source src="${src}" type="video/mp4">เบราว์เซอร์นี้เล่นวิดีโอไม่ได้ <a href="${src}">เปิดคลิป</a></video><figcaption>${v.caption ? `<span class="hand">${v.caption}</span>` : ""}<a class="ph-dl" href="${src}" download>ดาวน์โหลดคลิป</a></figcaption></figure>`;
       }
       return "";
     }
 
-    // A polaroid or portrait with a side sits beside the text that follows it, like a print tucked next to the writing.
+    // A small photo placed left or right sits beside the text that follows it, like a print tucked next to the writing.
     const isText = b => typeof b === "string" || b.note || b.verse || b.dialogue || b.quote || (b.thought && !b.size);
     function content(blocks) {
       const out = [];
       for (let n = 0; n < blocks.length; n++) {
         const b = blocks[n];
-        const sided = b.side && (b.layout === "polaroid" || b.layout === "portrait");
         const text = [];
-        while (sided && text.length < (b.with || 3) && blocks[n + 1] !== undefined && isText(blocks[n + 1])) text.push(blocks[++n]);
-        const fig = b.placeholder ? placeholder(b) : block(b);
+        while (I.isBeside(b) && text.length < (b.with || 3) && blocks[n + 1] !== undefined && isText(blocks[n + 1])) text.push(blocks[++n]);
+        const fig = block(b);
         out.push(text.length && fig
-          ? `<div class="beside beside--${b.side}">${fig}<div class="beside-text">${text.map(block).join("")}</div></div>`
+          ? `<div class="beside beside--${b.position || b.side}">${fig}<div class="beside-text">${text.map(block).join("")}</div></div>`
           : fig + text.map(block).join(""));
       }
       return out.join("");
@@ -116,7 +93,8 @@
         : `<span class="time hand">${e.time}</span>`;
       return `<section class="event flow" id="${e.id}" data-mood="${e.mood || chapter.mood}" aria-labelledby="${e.id}-t">
         <header class="event-head${e.quietTitle ? " sr-only" : ""}">${time}<h3 id="${e.id}-t">${e.title}</h3></header>
-        ${content(e.content)}
+        ${content([...(e.content || []), ...imageBlocks(e.images)])}
+        ${I.decorations(e.decorations, chapter.date)}
       </section>`;
     }
 
@@ -126,6 +104,8 @@
         <header class="chapter-open flow" data-mood="${ch.mood}">
           <h2 id="${ch.id}-t"><span class="chapter-day">Day ${pad(ch.day)}</span><span class="chapter-route">${ch.route.join(' <span class="arrow" aria-label="ไป">→</span> ')}</span></h2>
           <p class="chapter-date"><time datetime="${ch.date}">${dateRange(ch.date)}</time></p>
+          ${content(imageBlocks(ch.images))}
+          ${I.decorations(ch.decorations, ch.date)}
         </header>
         ${ch.events.map(event).join("")}
         ${ch.closing ? `<footer class="chapter-close flow" data-mood="${ch.events.at(-1).mood || ch.mood}"><p class="mark">${ch.closing}</p></footer>` : ""}
@@ -144,7 +124,7 @@
           <a class="cover-begin" href="#${T.chapters[0].id}">บันทึกการเดินทาง <span aria-hidden="true">↓</span></a>
         </div>
         <figure class="cover-photo">
-          ${openable(T.coverImage, img(T.coverImage, { eager: true }), "", "cover")}
+          ${I.cover(T.coverImage)}
           <dl class="cover-meta">${T.coverMeta.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
         </figure>
       </header>`;
@@ -159,19 +139,20 @@
         ${e.heading ? `<p class="ending-title" data-reveal>${e.title}</p>` : ""}
         ${e.stanzas.map(s => `<p class="stanza" data-reveal>${lines(s)}</p>`).join("")}
         <p class="signoff hand">${e.signoff}</p>
-        ${e.photo ? `<figure class="ph ph--portrait ending-photo" data-reveal>${openable(e.photo, img(e.photo))}</figure>` : ""}
+        ${e.photo ? `<div class="ending-photo">${I.block(typeof e.photo === "string" ? { image: e.photo, layout: "portrait" } : { layout: "portrait", ...e.photo }, T.endDate)}</div>` : ""}
         <p class="end-mark"><span>End of Journal</span><span>${T.title} · ${ymd(T.startDate).y}</span></p>
       </section>`;
     }
 
     function roll() {
-      if (!T.gallery || !T.gallery.length) return "";
+      const frames = (T.gallery || []).map(key => I.thumb(key, { group: "roll", sizesAttr: "180px" })).filter(Boolean);
+      if (!frames.length) return "";
       return `<section class="roll" id="roll" data-mood="notes" aria-labelledby="roll-t">
-        <div class="flow"><div class="roll-head"><h2 id="roll-t" class="roll-title">ม้วนฟิล์มจากทริปนี้ <small>${T.gallery.length} ภาพ · เลื่อนดูได้</small></h2><button type="button" class="roll-toggle" aria-pressed="false" hidden>หยุด</button></div></div>
+        <div class="flow"><div class="roll-head"><h2 id="roll-t" class="roll-title">ม้วนฟิล์มจากทริปนี้ <small>${frames.length} ภาพ · เลื่อนดูได้</small></h2><button type="button" class="roll-toggle" aria-pressed="false" hidden>หยุด</button></div></div>
         <div class="strip" tabindex="0" role="region" aria-labelledby="roll-t">
-          <ol>${T.gallery.map(key => `<li>${openable(key, img(key), "", "roll")}</li>`).join("")}${
+          <ol>${frames.map(f => `<li>${f}</li>`).join("")}${
             // A second, hidden copy lets the strip loop without a jump.
-            T.gallery.map(key => `<li data-dup aria-hidden="true">${openable(key, img(key), "", "roll").replace("<button ", '<button tabindex="-1" ')}</li>`).join("")}</ol>
+            frames.map(f => `<li data-dup aria-hidden="true">${f.replace("<button ", '<button tabindex="-1" ')}</li>`).join("")}</ol>
         </div>
       </section>`;
     }
@@ -246,6 +227,7 @@
     setupMoods();
     setupNav();
     setupReveal();
+    setupPosters();
     setupLightbox();
     setupRoll();
     setupMap(T);
@@ -269,9 +251,8 @@
       ${Object.keys(byYear).sort((a, b) => b - a).map(y => `<section class="shelf flow" aria-labelledby="y-${y}">
         <h2 class="shelf-year" id="y-${y}">${y}</h2>
         <ol class="shelf-list">${byYear[y].map(t => {
-          const c = t.images[t.coverImage];
           return `<li><a class="volume" href="${t.url}">
-            <span class="volume-photo"><img src="${t.imageBase}${c.src}" alt="" width="${c.w}" height="${c.h}" loading="lazy" decoding="async"${c.focus ? ` style="object-position:${c.focus}"` : ""}></span>
+            <span class="volume-photo">${window.JournalImages.create(t).thumb(t.coverImage, { expandable: false, sizesAttr: "160px" })}</span>
             <span class="volume-text">
               <span class="volume-date">${dateRange(t.startDate, t.endDate, true)}</span>
               <span class="volume-title">${t.title}</span>
@@ -328,25 +309,38 @@
     document.querySelectorAll("[data-reveal]").forEach(el => io.observe(el));
   }
 
+  // Video posters wait until the clip is close to the screen.
+  function setupPosters() {
+    const vids = document.querySelectorAll("video[data-poster]");
+    const load = v => { v.poster = v.dataset.poster; v.removeAttribute("data-poster"); };
+    if (!("IntersectionObserver" in window)) return vids.forEach(load);
+    const io = new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { load(en.target); io.unobserve(en.target); } }), { rootMargin: "600px 0px" });
+    vids.forEach(v => io.observe(v));
+  }
+
   function setupLightbox() {
     const dlg = document.createElement("dialog");
     dlg.className = "lightbox";
     dlg.setAttribute("aria-label", "ดูภาพขนาดใหญ่");
-    dlg.innerHTML = `<figure><img alt=""><figcaption class="hand"></figcaption></figure>
+    dlg.innerHTML = `<figure><img alt=""><figcaption><span class="hand lb-cap"></span><span class="lb-meta"></span><span class="lb-note"></span></figcaption></figure>
       <button type="button" class="lb-btn lb-close" aria-label="ปิด">×</button>
       <button type="button" class="lb-btn lb-prev" aria-label="ภาพก่อนหน้า">‹</button>
       <button type="button" class="lb-btn lb-next" aria-label="ภาพถัดไป">›</button>
       <p class="lb-count" aria-live="polite"></p>`;
     document.body.appendChild(dlg);
-    const im = dlg.querySelector("img"), cap = dlg.querySelector("figcaption"), count = dlg.querySelector(".lb-count");
+    const im = dlg.querySelector("img"), count = dlg.querySelector(".lb-count");
+    const cap = dlg.querySelector(".lb-cap"), meta = dlg.querySelector(".lb-meta"), note = dlg.querySelector(".lb-note");
     let group = [], index = 0, opener = null;
 
     const show = n => {
       index = (n + group.length) % group.length;
       const b = group[index], thumb = b.querySelector("img");
+      im.classList.remove("is-missing");
       im.src = b.dataset.lb;
-      im.alt = thumb.alt;
+      im.alt = thumb ? thumb.alt : "";
       cap.textContent = b.dataset.lbCaption || "";
+      meta.textContent = b.dataset.lbMeta || "";
+      note.textContent = b.dataset.lbNote || "";
       count.textContent = group.length > 1 ? `${index + 1} / ${group.length}` : "";
       dlg.classList.toggle("is-single", group.length < 2);
     };
@@ -472,6 +466,7 @@
   /* ---------- boot ---------- */
 
   function boot() {
+    window.JournalImages.setupFallbacks();
     const trips = window.JOURNAL_TRIPS || [];
     const page = document.body.dataset.page;
     if (page === "journeys") return renderJourneys(trips);

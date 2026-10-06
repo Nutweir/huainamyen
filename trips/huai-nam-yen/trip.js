@@ -1,6 +1,7 @@
 /*
  * Trip: Huai Nam Yen — data only. assets/journal.js turns this into the page.
- * How to add another trip: see trips/README.md.
+ * Photos live next to this file (cover/, day-01/, day-02/, details/, video/).
+ * How to add photos or a new trip: see trips/README.md.
  *
  * Story blocks (inside events[].content):
  *   "text"                                   paragraph (inline HTML allowed)
@@ -13,12 +14,12 @@
  *   { pause }                                breathing space before a moment
  *   { mark }                                 quiet one-line divider
  *   { stamp: { value, label, sub? } }        understated travel stamp
- *   { photo, layout, caption?, hand?, meta?, side?, tone?, reveal?, with? }
- *       side + polaroid/portrait: sits beside the next `with` (default 3) text blocks
- *       layout: full | stage | wide | inline | portrait | polaroid
- *   { photos: [...], layout: pair | trio, caption? }
- *   { placeholder, layout }                  empty photo slot (hidden when showPlaceholders is false)
+ *   { image, layout?, caption?, ... }        one photo   (key from `images`, or { src, alt })
+ *   { images: [...], layout?, caption? }     several photos
+ *   { placeholder, layout? }                 empty photo slot (hidden when showPlaceholders is false)
  *   { video }
+ * Also on an event: images: [...] (added after the text) and decorations: [...] (small pasted photos).
+ * Layout presets and photo options are listed in trips/README.md.
  */
 (window.JOURNAL_TRIPS = window.JOURNAL_TRIPS || []).push({
   slug: "huai-nam-yen",
@@ -43,33 +44,34 @@
   // Show empty photo slots where a moment has no photo yet. Set to false to hide them all.
   showPlaceholders: true,
 
-  imageBase: "img/",
+  // Every path below is relative to this trip's folder. Sizes come from images.js (tools/prepare_images.py).
+  base: "trips/huai-nam-yen/",
   images: {
-    "rice-cloud": { src: "rice-cloud.jpg", w: 788, h: 1400, focus: "50% 45%", alt: "ทุ่งนาสีเขียวที่บ้านนาเกียน มีเมฆก้อนใหญ่สีขาวลอยอยู่เหนือภูเขา" },
-    "sunset-field": { src: "sunset-field.jpg", w: 788, h: 1400, focus: "50% 58%", alt: "แสงอาทิตย์ลอดเมฆเหนือแนวภูเขา ส่องลงบนทุ่งนาสีเขียว" },
-    "mookata": { src: "mookata.jpg", w: 934, h: 1400, focus: "50% 55%", alt: "กระทะหมูกระทะกำลังมีควัน วางบนโต๊ะริมทุ่งนาตอนพลบค่ำ" },
-    "milkyway": { src: "milkyway.jpg", w: 1050, h: 1400, focus: "50% 55%", alt: "ทางช้างเผือกพาดผ่านท้องฟ้าที่เต็มไปด้วยดาว เหนือแนวเขาสีดำ" },
-    "milkyway-me": { src: "milkyway-me.jpg", w: 799, h: 1400, alt: "ผมยืนหันหลัง กางแขนรับท้องฟ้าที่มีทางช้างเผือก" },
-    "misty-hills": { src: "misty-hills.jpg", w: 1050, h: 1400, focus: "50% 56%", alt: "หมอกลอยเลียบไหล่เขา เหนือกระท่อมกลางทุ่งนาตอนเช้า" },
-    "dog": { src: "dog.jpg", w: 1050, h: 1400, alt: "สุนัขสีดำประจำโฮมสเตย์ นั่งหันข้าง ด้านหลังเป็นทุ่งนาและหมอกบาง ๆ" },
-    "coffee": { src: "coffee.jpg", w: 1050, h: 1400, alt: "แก้วกาแฟดำในมือ ถือไว้เหนือพื้นหญ้าริมทุ่งนา" },
-    "goat": { src: "goat.jpg", w: 1050, h: 1400, alt: "เซลฟีของผมกับเพื่อนร่วมทาง มีแพะยืนอยู่บนเนินหญ้าด้านหลัง" },
-    "waterfall": { src: "waterfall.jpg", w: 788, h: 1400, alt: "น้ำตกห้วยน้ำเย็นไหลจากหน้าผาสูงลงมาเป็นชั้น ๆ ท่ามกลางป่าเขียวทึบ" },
-    "waterfall-rocks": { src: "waterfall-rocks.jpg", w: 788, h: 1400, focus: "50% 60%", alt: "เพื่อนร่วมทางยืนกางแขนบนโขดหินหน้าสายน้ำตก" },
-    "noodles": { src: "noodles.jpg", w: 1600, h: 1067, alt: "ก๋วยเตี๋ยวชามลายไก่ในร้านชาวบ้านใกล้ที่พัก" },
-    "rice-walk": { src: "rice-walk.jpg", w: 788, h: 1400, focus: "50% 60%", alt: "ผมเดินอยู่บนคันนากลางทุ่งข้าวสีเขียว มีภูเขาและเมฆอยู่ด้านหลัง" },
-    "camera-homestay": { src: "camera-homestay.jpg", w: 934, h: 1400, focus: "50% 55%", alt: "ผมยืนจัดกล้องบนไม้เซลฟีที่ลานหน้าโฮมสเตย์" },
-    "afternoon-selfie": { src: "afternoon-selfie.jpg", w: 1050, h: 1400, focus: "50% 70%", alt: "เซลฟีของผมยิ้มกลางทุ่งนา ท้องฟ้าสีฟ้ามีเมฆขาว" },
-    "milkyway-field": { src: "milkyway-field.jpg", w: 1050, h: 1400, alt: "ทางช้างเผือกจาง ๆ เหนือทุ่งนาที่ยังมีแสงไฟส่องอยู่" },
-    "milkyway-glow": { src: "milkyway-glow.jpg", w: 1050, h: 1400, alt: "ทางช้างเผือกสีม่วงชมพูสว่างเหนือแนวเขาและเมฆ" },
-    "mist-mask": { src: "mist-mask.jpg", w: 788, h: 1400, focus: "50% 70%", alt: "ผมพันผ้าห่ม มาสก์หน้าอยู่ ยืนมองหมอกเหนือทุ่งนาตอนเช้า" },
-    "porch-coffee": { src: "porch-coffee.jpg", w: 936, h: 1400, alt: "ผมนั่งจิบกาแฟที่ระเบียงโฮมสเตย์ มีกาต้มน้ำและซองกาแฟบนโต๊ะ สุนัขนั่งอยู่ข้าง ๆ" },
-    "ban-na-kian": { src: "ban-na-kian.jpg", w: 1600, h: 1070, alt: "ทุ่งนาขั้นบันไดสีเขียวของบ้านนาเกียน มีบ้านหลังเล็กและภูเขาอยู่ด้านหลัง" },
-    "trail": { src: "trail.jpg", w: 933, h: 1400, focus: "50% 55%", alt: "กลุ่มของเราเดินเรียงกันบนทางดินกลางป่า มุ่งหน้าไปน้ำตก" },
-    "trail-ticket": { src: "trail-ticket.jpg", w: 788, h: 1400, focus: "50% 45%", alt: "มือถือบัตรน้ำตกห้วยน้ำเย็นไว้กับไม้เท้าเดินป่า" },
-    "uncle-phue-lue": { src: "uncle-phue-lue.jpg", w: 788, h: 1400, focus: "50% 72%", alt: "ลุงพือลือในเสื้อสีม่วงยืนถ่ายรูปคู่กับพี่ในกลุ่ม" },
-    "waterfall-me": { src: "waterfall-me.jpg", w: 788, h: 1400, focus: "50% 55%", alt: "ผมยืนกางแขนอยู่กลางสายน้ำตกที่ไหลผ่านโขดหิน" },
-    "waterfall-base": { src: "waterfall-base.jpg", w: 788, h: 1400, focus: "50% 60%", alt: "ผมก้มลงเล่นน้ำที่ฐานน้ำตก ข้างหน้าผาหินที่มีต้นไม้" }
+    "rice-cloud": { src: "cover/rice-cloud.jpg", focus: "50% 45%", alt: "ทุ่งนาสีเขียวที่บ้านนาเกียน มีเมฆก้อนใหญ่สีขาวลอยอยู่เหนือภูเขา" },
+    "sunset-field": { src: "day-01/sunset-field.jpg", focus: "50% 58%", alt: "แสงอาทิตย์ลอดเมฆเหนือแนวภูเขา ส่องลงบนทุ่งนาสีเขียว" },
+    "mookata": { src: "day-01/mookata.jpg", focus: "50% 55%", alt: "กระทะหมูกระทะกำลังมีควัน วางบนโต๊ะริมทุ่งนาตอนพลบค่ำ" },
+    "milkyway": { src: "day-01/milkyway.jpg", focus: "50% 55%", alt: "ทางช้างเผือกพาดผ่านท้องฟ้าที่เต็มไปด้วยดาว เหนือแนวเขาสีดำ" },
+    "milkyway-me": { src: "day-01/milkyway-me.jpg", alt: "ผมยืนหันหลัง กางแขนรับท้องฟ้าที่มีทางช้างเผือก" },
+    "misty-hills": { src: "day-02/misty-hills.jpg", focus: "50% 56%", alt: "หมอกลอยเลียบไหล่เขา เหนือกระท่อมกลางทุ่งนาตอนเช้า" },
+    "dog": { src: "day-02/dog.jpg", alt: "สุนัขสีดำประจำโฮมสเตย์ นั่งหันข้าง ด้านหลังเป็นทุ่งนาและหมอกบาง ๆ" },
+    "coffee": { src: "day-02/coffee.jpg", alt: "แก้วกาแฟดำในมือ ถือไว้เหนือพื้นหญ้าริมทุ่งนา" },
+    "goat": { src: "day-02/goat.jpg", alt: "เซลฟีของผมกับเพื่อนร่วมทาง มีแพะยืนอยู่บนเนินหญ้าด้านหลัง" },
+    "waterfall": { src: "day-02/waterfall.jpg", alt: "น้ำตกห้วยน้ำเย็นไหลจากหน้าผาสูงลงมาเป็นชั้น ๆ ท่ามกลางป่าเขียวทึบ" },
+    "waterfall-rocks": { src: "day-02/waterfall-rocks.jpg", focus: "50% 60%", alt: "เพื่อนร่วมทางยืนกางแขนบนโขดหินหน้าสายน้ำตก" },
+    "noodles": { src: "day-01/noodles.jpg", alt: "ก๋วยเตี๋ยวชามลายไก่ในร้านชาวบ้านใกล้ที่พัก" },
+    "rice-walk": { src: "day-01/rice-walk.jpg", focus: "50% 60%", alt: "ผมเดินอยู่บนคันนากลางทุ่งข้าวสีเขียว มีภูเขาและเมฆอยู่ด้านหลัง" },
+    "camera-homestay": { src: "day-01/camera-homestay.jpg", focus: "50% 55%", alt: "ผมยืนจัดกล้องบนไม้เซลฟีที่ลานหน้าโฮมสเตย์" },
+    "afternoon-selfie": { src: "day-01/afternoon-selfie.jpg", focus: "50% 70%", alt: "เซลฟีของผมยิ้มกลางทุ่งนา ท้องฟ้าสีฟ้ามีเมฆขาว" },
+    "milkyway-field": { src: "day-01/milkyway-field.jpg", alt: "ทางช้างเผือกจาง ๆ เหนือทุ่งนาที่ยังมีแสงไฟส่องอยู่" },
+    "milkyway-glow": { src: "day-01/milkyway-glow.jpg", alt: "ทางช้างเผือกสีม่วงชมพูสว่างเหนือแนวเขาและเมฆ" },
+    "mist-mask": { src: "day-02/mist-mask.jpg", focus: "50% 70%", alt: "ผมพันผ้าห่ม มาสก์หน้าอยู่ ยืนมองหมอกเหนือทุ่งนาตอนเช้า" },
+    "porch-coffee": { src: "day-02/porch-coffee.jpg", alt: "ผมนั่งจิบกาแฟที่ระเบียงโฮมสเตย์ มีกาต้มน้ำและซองกาแฟบนโต๊ะ สุนัขนั่งอยู่ข้าง ๆ" },
+    "ban-na-kian": { src: "day-02/ban-na-kian.jpg", alt: "ทุ่งนาขั้นบันไดสีเขียวของบ้านนาเกียน มีบ้านหลังเล็กและภูเขาอยู่ด้านหลัง" },
+    "trail": { src: "day-02/trail.jpg", focus: "50% 55%", alt: "กลุ่มของเราเดินเรียงกันบนทางดินกลางป่า มุ่งหน้าไปน้ำตก" },
+    "trail-ticket": { src: "details/trail-ticket.jpg", focus: "50% 45%", alt: "มือถือบัตรน้ำตกห้วยน้ำเย็นไว้กับไม้เท้าเดินป่า" },
+    "uncle-phue-lue": { src: "day-02/uncle-phue-lue.jpg", focus: "50% 72%", alt: "ลุงพือลือในเสื้อสีม่วงยืนถ่ายรูปคู่กับพี่ในกลุ่ม" },
+    "waterfall-me": { src: "day-02/waterfall-me.jpg", focus: "50% 55%", alt: "ผมยืนกางแขนอยู่กลางสายน้ำตกที่ไหลผ่านโขดหิน" },
+    "waterfall-base": { src: "day-02/waterfall-base.jpg", focus: "50% 60%", alt: "ผมก้มลงเล่นน้ำที่ฐานน้ำตก ข้างหน้าผาหินที่มีต้นไม้" }
   },
 
   // Story text: the author's own journal, "บันทึกเรื่องราวน้ำตกห้วยน้ำเย็น".
@@ -110,7 +112,7 @@
             "ประมาณ 11:30 น. เราเริ่มออกเดินทางจากอมก๋อยขึ้นไปยังโฮมสเตย์",
             "และถ้าถามว่าทางเป็นยังไง...",
             { note: "โคตรโหดครับ 555" },
-            { video: { src: "video/road-up.mp4", poster: "img/road-up-poster.jpg", w: 540, h: 960, label: "วิดีโอทางขึ้นบ้านนาเกียนจากท้ายรถ", caption: "ทางขึ้นบ้านนาเกียน ประมาณ 12 วินาที" } },
+            { video: { src: "video/road-up.mp4", poster: "video/road-up-poster.jpg", w: 540, h: 960, label: "วิดีโอทางขึ้นบ้านนาเกียนจากท้ายรถ", caption: "ทางขึ้นบ้านนาเกียน ประมาณ 12 วินาที" } },
             "เส้นทางบางช่วงทั้งชัน ทั้งขรุขระ และโยกจนแทบไม่ได้นั่งนิ่ง ๆ กันเลย ยิ่งเข้าไปลึก ถนนก็ยิ่งทำให้รู้ว่า ที่ที่เรากำลังจะไปมันไม่ได้เดินทางไปถึงกันง่าย ๆ จริง ๆ",
             "แต่แปลกตรงที่ ถึงทางจะโหดและเหนื่อยแค่ไหน ผมกลับรู้สึกสนุกมาก",
             "อาจเพราะเราเดินทางกันหลายคน มีทั้งเสียงหัวเราะ มีการแซวกันตลอดทาง แล้วทุกครั้งที่รถผ่านช่วงยาก ๆ ไปได้ ก็เหมือนผ่านอีกหนึ่งด่านของทริปไปด้วยกัน",
@@ -129,7 +131,7 @@
             "และความรู้สึกแรกตอนลงจากรถคือ...",
             { note: "หิวข้าวมากครับ 555" },
             "ตอนนั้นแทบไม่ได้คิดเรื่องพักหรือเก็บของเลย สิ่งแรกที่ทำคือเดินไปลุยร้านก๋วยเตี๋ยวของชาวบ้านที่อยู่ใกล้ ๆ ที่พักก่อน",
-            { photo: "noodles", layout: "polaroid", side: "left", caption: "ก๋วยเตี๋ยวชามนั้น", hand: true },
+            { image: "noodles", layout: "polaroid", position: "left", caption: "ก๋วยเตี๋ยวชามนั้น" },
             "เป็นก๋วยเตี๋ยวหน้าตาบ้าน ๆ ธรรมดามากครับ",
             "แต่ไม่รู้ว่าเพราะหิว เพราะอากาศ หรือเพราะบรรยากาศรอบตัวกันแน่",
             { thought: "ทำไมมันอร่อยขนาดนั้นก็ไม่รู้" },
@@ -144,11 +146,11 @@
             { note: "เริ่มเลยครับ" },
             "หยิบกล้องออกมา แล้วก็เดินถ่ายภาพเก็บบรรยากาศรอบ ๆ ที่พักทันที",
             "ทั้งทุ่งนา ภูเขา บ้านเล็ก ๆ แสงแดด ต้นไม้ แล้วก็บรรยากาศเงียบ ๆ รอบตัว",
-            { photos: [{ photo: "rice-walk" }, { photo: "camera-homestay" }, { photo: "afternoon-selfie" }], layout: "trio", caption: "บ่ายที่บ้านนาเกียน" },
+            { images: [{ image: "rice-walk" }, { image: "camera-homestay" }, { image: "afternoon-selfie" }], layout: "collage", caption: "บ่ายที่บ้านนาเกียน" },
             "จริง ๆ ตอนนั้นผมไม่ได้มีแผนว่าจะต้องถ่ายอะไรให้ได้เป็นพิเศษนะครับ",
             "แค่รู้สึกว่าอยากเก็บทุกอย่างที่เห็นเอาไว้",
             "ผมเดินถ่ายไปเรื่อย ๆ จนถึงช่วงเย็น",
-            { video: { src: "video/rice-walk.mp4", poster: "img/rice-walk-poster.jpg", w: 540, h: 960, label: "วิดีโอเดินกลางทุ่งนาบ้านนาเกียน", caption: "เดินถ่ายกลางทุ่งนา ประมาณ 6 วินาที" } },
+            { video: { src: "video/rice-walk.mp4", poster: "video/rice-walk-poster.jpg", w: 540, h: 960, label: "วิดีโอเดินกลางทุ่งนาบ้านนาเกียน", caption: "เดินถ่ายกลางทุ่งนา ประมาณ 6 วินาที" } },
             "แล้วมันมีความรู้สึกหนึ่งที่ชัดมาก ๆ คือ...",
             { thought: "ทำไมวันนี้เรารู้สึกว่าได้ใช้เวลาของวันเยอะจัง", size: "xl" },
             "ทั้ง ๆ ที่ทุกวันก็มี 24 ชั่วโมงเท่ากัน",
@@ -162,7 +164,7 @@
         {
           id: "d1-golden", time: "เย็น", title: "ก่อนพระอาทิตย์ลับภูเขา", quietTitle: true, mood: "golden",
           content: [
-            { photo: "sunset-field", layout: "full", caption: "ก่อนพระอาทิตย์ลับภูเขา", hand: true, meta: "Ban Na Kian" },
+            { image: "sunset-field", layout: "full", caption: "ก่อนพระอาทิตย์ลับภูเขา", location: "Ban Na Kian" },
             "พอฟ้าเริ่มเปลี่ยนสี อากาศก็เริ่มเย็นลง"
           ]
         },
@@ -173,7 +175,7 @@
             { thought: "หมูกระทะเลยครับทุกคน" },
             "เพราะผมมีความเชื่อส่วนตัวว่า...",
             { note: "มาบนดอย ต้องหมูกระทะครับ 555" },
-            { photo: "mookata", layout: "polaroid", side: "right", caption: "หมูกระทะริมทุ่งนา", hand: true },
+            { image: "mookata", layout: "polaroid", position: "right", caption: "หมูกระทะริมทุ่งนา" },
             "อากาศเย็น ๆ มีภูเขากับทุ่งนาอยู่รอบตัว แล้วนั่งกินของร้อน ๆ ไปด้วย มันเป็นอะไรที่เข้ากันแบบบอกไม่ถูก",
             "ระหว่างกินก็คุยเล่นกับพี่ ๆ ไปเรื่อย",
             "แล้วก็มีประโยคหนึ่งที่พูดกันอยู่เป็นระยะ",
@@ -194,7 +196,7 @@
             "แล้วอยู่ ๆ ก็รู้สึกแปลก ๆ",
             "ผมมองภาพอยู่สักพัก ก่อนจะคิดในใจว่า...",
             { thought: ["เดี๋ยวนะ", "นี่มัน... ทางช้างเผือกนี่หว่า"], size: "xl" },
-            { photo: "milkyway", layout: "full", meta: "Ban Na Kian", reveal: "slow" },
+            { image: "milkyway", layout: "full", location: "Ban Na Kian", reveal: "slow" },
             "ตอนนั้นความรู้สึกมันอธิบายยากมากครับ",
             "ทั้งตื่นเต้น ทั้งดีใจ แล้วก็เหมือนจะร้องไห้ไปพร้อมกัน",
             "เพราะนี่คือ <b>ครั้งแรกในชีวิตที่ผมได้เห็นทางช้างเผือก</b>",
@@ -204,10 +206,10 @@
             "จากตอนแรกที่แค่พูดเล่น ๆ กันตอนกินหมูกระทะว่า “คืนนี้จะมีดาวไหมนะ”",
             { thought: "สุดท้ายท้องฟ้ากลับให้มากกว่าที่ขอไปเยอะเลย" },
             "ผมยืนถ่ายอยู่ตรงนั้นอีกพักใหญ่ ลองเปลี่ยนมุม ตั้งกล้องใหม่ แล้วก็พยายามเก็บภาพเอาไว้ให้ได้มากที่สุด",
-            { photos: [{ photo: "milkyway-field" }, { photo: "milkyway-glow" }], layout: "pair", caption: "ลองเปลี่ยนมุม ตั้งกล้องใหม่" },
+            { images: [{ image: "milkyway-field" }, { image: "milkyway-glow" }], layout: "two-column", caption: "ลองเปลี่ยนมุม ตั้งกล้องใหม่" },
             "แต่ต่อให้มีรูปกลับมากี่ใบ ผมก็รู้สึกว่ามันคงแทนความรู้สึกตอนที่ได้เห็นด้วยตาตัวเองไม่ได้อยู่ดี",
             "วันนั้นเลยจบลงด้วยภาพหนึ่งที่ผมน่าจะจำไปอีกนาน",
-            { photo: "milkyway-me", layout: "stage", tone: "night", caption: "ภาพของตัวเองที่ยืนอยู่ใต้ทางช้างเผือก", hand: true },
+            { image: "milkyway-me", layout: "spotlight", tone: "night", caption: "ภาพของตัวเองที่ยืนอยู่ใต้ทางช้างเผือก" },
             "จากวันที่เริ่มต้นด้วยการออกจากเชียงใหม่ตอน 7 โมงเช้า ผ่านถนนหลายร้อยโค้ง ก๋วยเตี๋ยวชามธรรมดา ทุ่งนา แสงเย็น และหมูกระทะ",
             "ก่อนที่ตอนกลางคืน จะได้รับของขวัญชิ้นสุดท้ายจากท้องฟ้า",
             "ถ้าถามว่าตอนนั้นรู้สึกยังไง... คงมีคำเดียวครับ",
@@ -230,13 +232,13 @@
           content: [
             "ผมตื่นประมาณ 05:30 น.",
             "สิ่งแรกที่ทำคือเปิดหน้าต่างออกไปดูข้างนอก แล้วก็เจอหมอกกำลังลงพอดี",
-            { photo: "misty-hills", layout: "full", caption: "หมอกลงที่บ้านนาเกียน", meta: "Ban Na Kian" },
+            { image: "misty-hills", layout: "full", caption: "หมอกลงที่บ้านนาเกียน", location: "Ban Na Kian" },
             "บรรยากาศตอนเช้าดีมากครับ อากาศเย็นจนรู้สึกหนาวสั่นนิด ๆ ทุกอย่างรอบตัวเงียบกว่าตอนกลางวันมาก มีแค่หมอก ทุ่งนา ภูเขา และอากาศเย็น ๆ ที่พัดเข้ามา",
-            { photo: "mist-mask", layout: "polaroid", side: "left", caption: "มาสก์หน้าไปด้วย ดูหมอกไปด้วย", hand: true },
+            { image: "mist-mask", layout: "polaroid", position: "left", caption: "มาสก์หน้าไปด้วย ดูหมอกไปด้วย" },
             "ผมรีบล้างหน้า ล้างตา มาสก์หน้าตามกิจวัตรที่ทำเป็นประจำ แล้วก็หยิบกล้องออกไปทันที",
             "เพราะรู้สึกว่า...",
             { note: "ถ้าช้าไปกว่านี้ เดี๋ยวหมอกหายก่อนแน่ ๆ" },
-            { photo: "dog", layout: "polaroid", side: "right", caption: "เพื่อนสี่ขาประจำโฮมสเตย์", hand: true, with: 2 },
+            { image: "dog", layout: "polaroid", position: "right", caption: "เพื่อนสี่ขาประจำโฮมสเตย์", with: 2 },
             "ช่วงเช้าวันนั้นเลยกลายเป็นอีกช่วงหนึ่งที่ผมเดินถ่ายภาพไปเรื่อย ๆ แบบไม่ได้รีบร้อนอะไร",
             "บางทีผมก็รู้สึกว่าการตื่นเช้าในสถานที่แบบนี้มันต่างจากการตื่นเช้าในเมืองนะครับ",
             "ปกติตื่นขึ้นมา เราอาจจะคิดถึงงาน คิดถึงเวลา หรือคิดว่าวันนี้ต้องทำอะไรบ้าง",
@@ -255,7 +257,7 @@
             { note: "น้อยไปหน่อย 555" },
             "ผมเป็นคนกินข้าวค่อนข้างเยอะ เลยรู้สึกว่ายังไม่ค่อยอิ่มเท่าไหร่",
             "แต่บรรยากาศตอนนั้นดีครับ นั่งกินข้าว จิบกาแฟดำแบบซองไปด้วย แล้วก็นั่งคุยเล่นกับพี่ ๆ",
-            { photos: [{ photo: "porch-coffee", caption: "เช้าที่ระเบียงโฮมสเตย์" }, { photo: "coffee", caption: "กาแฟดำแบบซอง" }], layout: "pair" },
+            { images: [{ image: "porch-coffee", caption: "เช้าที่ระเบียงโฮมสเตย์" }, { image: "coffee", caption: "กาแฟดำแบบซอง" }], layout: "two-column" },
             "ก่อนที่จะมีคนพูดขึ้นมาประมาณว่า",
             { thought: "“วันนี้เราจะเจอเรื่องดี ๆ อีกไหมนะ?”" },
             "เพราะเมื่อวานตั้งแต่ออกจากเชียงใหม่จนถึงตอนกลางคืน เราเจอแต่เรื่องดี ๆ แทบทั้งวัน",
@@ -272,20 +274,20 @@
             "เป็นที่พักที่ตอนแรกผมเลือกเพราะอยากได้วิวทุ่งนา อยากอยู่เงียบ ๆ กับธรรมชาติ",
             "แต่พอได้มาพักจริง ๆ กลับได้อะไรเยอะกว่าที่คิดมาก",
             { verse: ["ได้เห็นแสงเย็น", "ได้กินหมูกระทะ", "ได้ตื่นมาเจอหมอก", "และที่สำคัญที่สุด คือได้เห็นทางช้างเผือกเป็นครั้งแรกในชีวิต"] },
-            { photo: "ban-na-kian", layout: "wide", caption: "ภาพสุดท้ายของบ้านนาเกียน", hand: true, meta: "Ban Na Kian" },
+            { image: "ban-na-kian", layout: "wide", caption: "ภาพสุดท้ายของบ้านนาเกียน", location: "Ban Na Kian" },
             { thought: ["เป็นหนึ่งคืนที่รู้สึกว่าสั้น...", "แต่มีอะไรเกิดขึ้นเยอะมากจริง ๆ"] },
             { mark: "บ้านนาเกียน · หนึ่งคืน" }
           ]
         },
         {
           id: "d2-0930", time: "09:30", title: "เริ่มเดินสู่น้ำตกห้วยน้ำเย็น", mood: "forest",
+          decorations: [{ image: "trail-ticket", caption: "บัตรน้ำตก" }],
           content: [
             "ประมาณ 09:30 น. เราเริ่มออกเดินทางไปน้ำตกห้วยน้ำเย็นครับ วันนี้มีไกด์เดินนำทางไปกับเราด้วย",
-            { photo: "trail-ticket", layout: "polaroid", side: "right", caption: "บัตรน้ำตกห้วยน้ำเย็น", hand: true, with: 2 },
             "แดดช่วงเช้ากำลังดีเลยครับ ไม่ร้อนจนเกินไป ช่วงแรกที่เดิน ผมยังรู้สึกสดชื่นมาก",
             "ระหว่างทางก็มีทั้งต้นไม้ ลำธาร เสียงน้ำ เสียงนก แล้วก็อากาศสดชื่นแบบที่หาไม่ได้ง่าย ๆ ในเมือง",
             "ได้สูดอากาศเต็มปอด เดินไป มองธรรมชาติไป ถ่ายภาพไป",
-            { photo: "trail", layout: "full", meta: "Huai Nam Yen trail" },
+            { image: "trail", layout: "full", location: "Huai Nam Yen trail" },
             "แปลกเหมือนกันครับ ระยะทางก็ไม่ใช่น้อย ๆ แต่ตอนนั้นกลับแทบไม่รู้สึกเหนื่อยเลย เพราะมีอะไรให้ดูตลอดทาง",
             "ยิ่งเดินเข้าไปลึกเท่าไหร่ ก็ยิ่งรู้สึกว่าตัวเองกำลังออกห่างจากโลกข้างนอกเข้าไปเรื่อย ๆ"
           ]
@@ -294,19 +296,19 @@
           id: "d2-uncle", title: "บ้านลุงพือลือ", mood: "forest",
           content: [
             "ระหว่างทางเราก็เดินมาถึง <b>บ้านลุงพือลือ</b>",
-            { photo: "uncle-phue-lue", layout: "polaroid", side: "right", caption: "ลุงพือลือ กับพี่ในกลุ่ม", hand: true, with: 1 },
+            { image: "uncle-phue-lue", layout: "polaroid", position: "right", caption: "ลุงพือลือ กับพี่ในกลุ่ม", with: 1 },
             "คุณลุงเป็นหนึ่งในคนสำคัญที่บุกเบิกเส้นทางแห่งนี้ โดยใช้เวลาหลายปีในการทำเส้นทาง เพื่อให้คนอื่นได้มีโอกาสเข้ามาเห็นน้ำตกแห่งนี้เหมือนกัน",
             "แล้วคิดว่าพอมาถึงบ้านลุง เราเจออะไรครับ?",
             "ใช่ครับ...",
             { note: "ดวงดีอีกแล้ว" },
             "มีน้องแพะตัวเล็กอายุเพิ่งประมาณ <b>5 วัน</b> ตัวเล็กมาก แล้วก็น่ารักมากครับ",
             {
-              photos: [
-                { photo: "goat", caption: "แพะบ้านลุง · และผม" },
+              images: [
+                { image: "goat", caption: "แพะบ้านลุง · และผม" },
                 // TODO(photo): the ~5-day-old baby goat
                 { placeholder: "น้องแพะ 5 วัน" }
               ],
-              layout: "pair"
+              layout: "two-column"
             },
             "น้องให้อุ้มเล่นด้วย พี่ ๆ ในกลุ่มคือชอบกันมาก กลายเป็นว่าจากที่ตั้งใจแค่จะแวะพัก เราใช้เวลาเล่นกับน้องแพะกันอยู่พักใหญ่เลย",
             "คุณลุงเองก็เป็นกันเองมากครับ พูดคุยกับนักท่องเที่ยว แล้วก็ชวนทุกคนมาเที่ยว มาสัมผัสธรรมชาติที่นี่กัน",
@@ -322,7 +324,7 @@
           id: "waterfall", title: "น้ำตกห้วยน้ำเย็น — สิ่งที่ภาพถ่ายเก็บไว้ไม่หมด", quietTitle: true, mood: "forest",
           content: [
             { pause: "แล้วในที่สุด..." },
-            { photo: "waterfall", layout: "stage", tone: "forest", caption: "น้ำตกห้วยน้ำเย็น", meta: "Ban Mae Khong", reveal: "slow" },
+            { image: "waterfall", layout: "spotlight", tone: "forest", caption: "น้ำตกห้วยน้ำเย็น", location: "Ban Mae Khong", reveal: "slow" },
             "เราก็มาถึง <b>น้ำตกห้วยน้ำเย็น</b>",
             "ความรู้สึกวินาทีแรกมีอยู่คำเดียวเลยครับ",
             { thought: "โอ้โห", size: "xl" },
@@ -334,8 +336,8 @@
             "ขอบคุณที่มีคนยอมใช้เวลาและแรงของตัวเองในการเปิดเส้นทาง เพื่อให้คนอย่างผมและนักท่องเที่ยวคนอื่น ๆ ได้มีโอกาสเข้ามาเห็นสถานที่แห่งนี้",
             { verse: ["เพราะถ้าไม่มีคนเหล่านั้น...", "ผมก็คงไม่ได้มายืนอยู่ตรงนี้ในวันนี้"] },
             "หลังจากนั้นก็ถ่ายรูป ถ่ายคลิป เล่นน้ำ แล้วก็ใช้เวลาอยู่ตรงนั้นสักพักครับ",
-            { photos: [{ photo: "waterfall-me" }, { photo: "waterfall-base" }], layout: "pair", caption: "เล่นน้ำ" },
-            { video: { src: "video/waterfall.mp4", poster: "img/waterfall-video-poster.jpg", w: 540, h: 960, label: "วิดีโอน้ำตกห้วยน้ำเย็น", caption: "ภาพเคลื่อนไหว ประมาณ 8 วินาที" } },
+            { images: [{ image: "waterfall-me" }, { image: "waterfall-base" }], layout: "two-column", caption: "เล่นน้ำ" },
+            { video: { src: "video/waterfall.mp4", poster: "video/waterfall-poster.jpg", w: 540, h: 960, label: "วิดีโอน้ำตกห้วยน้ำเย็น", caption: "ภาพเคลื่อนไหว ประมาณ 8 วินาที" } },
             "จริง ๆ ถ้ามีเวลา ผมอยากอยู่ตรงนั้นนานกว่านี้มาก",
             { verse: ["อยากนั่งเฉย ๆ", "ฟังเสียงน้ำ", "เล่นน้ำ", "แล้วก็ไม่ต้องคิดว่าต่อไปต้องไปไหน"] },
             "แต่เวลาของเราวันนั้นไม่ได้มีเยอะมากแล้ว ยังต้องเดินกลับ และต้องลงจากหมู่บ้านไปถึงอมก๋อยอีก",

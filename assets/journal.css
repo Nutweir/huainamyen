@@ -194,7 +194,7 @@ b { font-weight: 600; }
 .stamp span { font-family: var(--f-latin); font-size: .78rem; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; }
 .stamp small { font-size: .8rem; }
 
-/* ---------- photos ---------- */
+/* ---------- photos (presets from assets/journal-images.js) ---------- */
 .ph { margin: 2.25rem 0; }
 .ph-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; cursor: zoom-in; }
 .ph img { width: 100%; height: auto; background: color-mix(in srgb, var(--rule) 60%, transparent); }
@@ -202,42 +202,68 @@ figcaption { margin-top: .7rem; display: flex; flex-wrap: wrap; align-items: bas
 figcaption .hand { font-size: 1.1rem; }
 .ph-cap { font-size: .9rem; color: var(--muted); }
 .ph-meta { font-family: var(--f-latin); font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+.size-s { --w: 210px; }
+.size-m { --w: 300px; }
+.size-l { --w: 440px; }
 
-/* full-bleed: whole image on phones, a cinematic crop on wide screens */
+/* hero: the first thing you see, filling the screen */
+.ph--hero { grid-column: full; margin: 0 0 3rem; }
+.ph--hero img { height: calc(100svh - var(--nav-h)); object-fit: cover; }
+.ph--hero figcaption { padding: 0 var(--gutter); max-width: calc(var(--wide) + var(--gutter) * 2); margin-inline: auto; width: 100%; }
+
+/* full: whole image on phones, a cinematic crop on wide screens */
 .ph--full { grid-column: full; margin: 3rem 0; }
-.ph--full img { height: min(92svh, calc(100vw * var(--r))); object-fit: cover; }
+.ph--full img { height: min(92svh, calc(100vw * var(--r, .75))); object-fit: cover; }
 .ph--full figcaption { padding: 0 var(--gutter); max-width: calc(var(--wide) + var(--gutter) * 2); margin-inline: auto; width: 100%; }
 
-/* stage: a tall photo shown uncropped on a band of its own colour */
-.ph--stage { grid-column: full; margin: 3rem 0; padding: 0; }
-.ph--stage .ph-open { display: flex; justify-content: center; }
-.ph--stage img { width: 100%; }
-.ph--stage figcaption { padding: 0 var(--gutter); justify-content: center; text-align: center; flex-direction: column; align-items: center; }
+/* spotlight: a tall photo shown uncropped on a band of its own colour */
+.ph--spotlight { grid-column: full; margin: 3rem 0; padding: 0; }
+.ph--spotlight .ph-open { display: flex; justify-content: center; }
+.ph--spotlight img { width: 100%; }
+.ph--spotlight figcaption { padding: 0 var(--gutter); justify-content: center; text-align: center; flex-direction: column; align-items: center; }
 .tone-forest { background: var(--stage-forest); color: #e7ece2; }
 .tone-forest figcaption { padding: 1rem var(--gutter) 1.4rem; margin: 0; }
 .tone-forest .hand, .tone-forest .ph-meta, .tone-forest .ph-cap { color: #d9dccf; }
 @media (min-width: 720px) {
-  .ph--stage { padding: 4vh 0; }
-  .ph--stage img { width: auto; height: min(92svh, 1400px); }
+  .ph--spotlight { padding: 4vh 0; }
+  .ph--spotlight img { width: auto; height: min(92svh, 1400px); }
   .tone-night { padding: 0; }
 }
 
+/* background: an atmosphere band, optionally with a line written over it */
+.ph--background { grid-column: full; position: relative; margin: 3rem 0; }
+.ph--background img { height: min(80svh, 760px); object-fit: cover; }
+.bg-text { position: absolute; inset: auto 0 0; margin: 0; padding: 5rem var(--gutter) 2.5rem; text-align: center; color: #f4efe4; font-family: var(--f-display); font-size: clamp(1.25rem, 4vw, 1.9rem); line-height: 1.6; background: linear-gradient(transparent, rgb(12 11 9 / .6)); }
+
 .ph--wide { grid-column: wide; }
 .ph--wide img { aspect-ratio: 3 / 2; object-fit: cover; }
-.ph--portrait { grid-column: wide; width: min(100%, 460px); }
-.ph--portrait.ph--left { justify-self: start; }
-.ph--portrait.ph--right { justify-self: end; }
-.ph--portrait:not(.ph--left):not(.ph--right) { justify-self: center; }
+.ph--inline img { width: auto; max-width: 100%; max-height: 85svh; margin-inline: auto; }
+.ph--portrait { grid-column: wide; justify-self: center; width: min(100%, var(--w, 460px)); }
 
 /* polaroid: a print tucked into the page, used sparingly */
-.ph--polaroid { grid-column: wide; justify-self: center; width: min(78%, 300px); background: var(--polaroid); padding: 10px 10px 0; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 10px 26px -12px rgb(0 0 0 / .35); transform: rotate(-1.6deg); margin: 2.5rem 0; }
-.ph--polaroid.ph--right { transform: rotate(1.8deg); }
+.ph--polaroid { grid-column: wide; justify-self: center; width: min(78%, var(--w, 300px)); background: var(--polaroid); padding: 10px 10px 0; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 10px 26px -12px rgb(0 0 0 / .35); transform: rotate(var(--tilt, -1.6deg)); margin: 2.5rem 0; }
 .ph--polaroid img { aspect-ratio: 1 / 1; object-fit: cover; }
 .ph--polaroid figcaption { justify-content: center; padding: .55rem 0 .8rem; margin: 0; }
 .ph--polaroid figcaption .hand { color: #5a4630; font-size: 1.05rem; }
+
+/* diary-photo: a small print held on with a strip of tape */
+.ph--diary-photo { grid-column: wide; justify-self: center; position: relative; width: min(70%, var(--w, 240px)); background: var(--polaroid); padding: 6px; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 8px 20px -12px rgb(0 0 0 / .35); transform: rotate(var(--tilt, -2deg)); margin: 2.75rem 0 2.25rem; }
+.ph--diary-photo::before, .deco::before { content: ""; position: absolute; z-index: 1; top: -11px; left: 50%; width: 46%; max-width: 90px; height: 22px; translate: -50% 0; rotate: -4deg; background: rgb(233 222 196 / .78); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.ph--diary-photo figcaption { justify-content: center; margin: .45rem 0 .1rem; }
+.ph--diary-photo figcaption .hand { color: #5a4630; font-size: 1rem; }
+.ph--diary-photo .ph-meta { color: #7d6f5c; }
+
+/* position: left / right / center for the small presets, bleed to one edge for big ones */
 @media (min-width: 720px) {
-  .ph--polaroid.ph--left { justify-self: start; }
-  .ph--polaroid.ph--right { justify-self: end; }
+  :is(.ph--portrait, .ph--polaroid, .ph--diary-photo, .ph--inline).ph--left { justify-self: start; }
+  :is(.ph--portrait, .ph--polaroid, .ph--diary-photo, .ph--inline).ph--right { justify-self: end; }
+}
+.ph--bleed-left, .ph--bleed-right { grid-column: full; width: auto; justify-self: stretch; }
+@media (min-width: 900px) {
+  .ph--bleed-left { grid-column: full-start / text-end; }
+  .ph--bleed-right { grid-column: text-start / full-end; }
+  .ph--bleed-left figcaption { padding-left: var(--gutter); }
+  .ph--bleed-right figcaption { padding-right: var(--gutter); }
 }
 
 /* a side photo next to the lines it belongs with (stacked on phones) */
@@ -249,25 +275,60 @@ figcaption .hand { font-size: 1.1rem; }
   .beside--right { grid-column: text-start / wide-end; grid-template-columns: minmax(0, 1fr) 320px; }
   .beside--right > .ph { order: 2; }
   .beside--left { grid-column: wide-start / text-end; grid-template-columns: 320px minmax(0, 1fr); }
-  .beside > .ph--polaroid, .beside > .ph--portrait { width: 100%; justify-self: stretch; }
+  .beside > :is(.ph--polaroid, .ph--portrait, .ph--diary-photo) { width: min(100%, var(--w, 100%)); justify-self: center; }
 }
 
-/* sets: a two-photo spread or three-photo collage */
+/* sets: several photos arranged by one preset */
 .set { grid-column: wide; justify-self: center; width: min(100%, 860px); margin: 2.5rem 0; }
 .set-grid { display: grid; gap: clamp(8px, 2vw, 20px); grid-template-columns: 1fr 1fr; align-items: start; }
 .set-item img { width: 100%; height: auto; }
 .set-item img, .set .slot { aspect-ratio: 4 / 5; object-fit: cover; }
 .set-cap { display: block; margin-top: .45rem; font-size: .85rem; color: var(--muted); line-height: 1.5; }
-.set--single .set-grid { grid-template-columns: minmax(0, 460px); justify-content: center; }
 .set--empty { grid-column: text; }
 .set--empty .slot { aspect-ratio: 1 / 1; }
 @media (min-width: 720px) {
-  .set--pair .set-grid > :nth-child(2) { margin-top: 14%; }
+  .set--two-column .set-grid > :nth-child(2) { margin-top: 14%; }
 }
-.set--trio .set-grid { grid-template-columns: 3fr 2fr; grid-template-rows: 1fr 1fr; align-items: stretch; }
-.set--trio .set-grid > :first-child { grid-row: span 2; }
-.set--trio .set-grid > :not(:first-child) { position: relative; min-height: 0; }
-.set--trio .set-grid > :not(:first-child) img, .set--trio .set-grid > :not(:first-child).slot { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; }
+/* collage of three: one large, two stacked; of four: a 2×2 grid */
+.set--collage.set--n3 .set-grid { grid-template-columns: 3fr 2fr; grid-template-rows: 1fr 1fr; align-items: stretch; }
+.set--collage.set--n3 .set-grid > :first-child { grid-row: span 2; }
+.set--collage.set--n3 .set-grid > :not(:first-child) { position: relative; min-height: 0; }
+.set--collage.set--n3 .set-grid > :not(:first-child) img, .set--collage.set--n3 .set-grid > :not(:first-child).slot { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; }
+/* memory-stack: prints dropped on top of each other */
+.set--memory-stack { width: min(100%, 520px); }
+.set--memory-stack .set-grid { grid-template-columns: 1fr; grid-template-areas: "s"; padding: 4% 0 18%; }
+.set--memory-stack .set-item { grid-area: s; justify-self: center; width: 56%; background: var(--polaroid); padding: 8px 8px 24px; box-shadow: 0 1px 2px rgb(0 0 0 / .14), 0 12px 26px -14px rgb(0 0 0 / .4); transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--tilt, 0deg)); transition: transform .4s var(--ease); }
+.set--memory-stack .set-item:nth-child(1) { --dx: -24%; }
+.set--memory-stack .set-item:nth-child(2) { --dx: 22%; --dy: 9%; }
+.set--memory-stack .set-item:nth-child(3) { --dx: -2%; --dy: 20%; }
+.set--memory-stack .set-item:nth-child(4) { --dx: 12%; --dy: 30%; }
+.set--memory-stack.set--n4 .set-grid { padding-bottom: 28%; }
+.set--memory-stack .set-item:is(:hover, :focus-within) { z-index: 2; }
+/* film-strip: a short roll inside the story (the trip roll is separate) */
+.set--film-strip { grid-column: full; width: auto; justify-self: stretch; }
+.set--film-strip .set-item img, .strip--inline .slot { width: auto; height: clamp(150px, 28vw, 220px); aspect-ratio: auto; }
+.strip--inline .slot { aspect-ratio: 4 / 5; }
+.set--film-strip figcaption { padding: 0 var(--gutter); justify-content: center; }
+/* gallery: many photos as a contact sheet */
+.set--gallery .set-grid { grid-template-columns: repeat(auto-fill, minmax(min(150px, 30%), 1fr)); gap: 6px; }
+.set--gallery .set-item img { aspect-ratio: 1 / 1; }
+.set.ph--bleed-left, .set.ph--bleed-right { width: auto; }
+
+/* decorations: small prints pasted in the margin (stacked under the entry on smaller screens) */
+.decos { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 1.6rem 1.75rem; margin: 2.5rem 0 0; }
+.deco { position: relative; margin: 0; width: var(--w, 128px); background: var(--polaroid); padding: 6px 6px 8px; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 8px 18px -10px rgb(0 0 0 / .35); transform: rotate(var(--tilt, 2deg)); }
+.deco img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; background: color-mix(in srgb, var(--rule) 60%, transparent); }
+.deco figcaption { justify-content: center; margin: .35rem 0 0; font-size: .92rem; color: #5a4630; text-align: center; }
+/* Only screens with room outside the wide photo column get margin prints, so they never cover a photo. */
+@media (min-width: 1480px) {
+  .event, .chapter-open { position: relative; }
+  .decos { position: absolute; z-index: 1; top: clamp(5rem, 8vw, 7rem); flex-direction: column; flex-wrap: nowrap; gap: 2.5rem; margin: 0; }
+  .decos--right { grid-column: wide-end / full-end; justify-self: center; }
+  .decos--left { grid-column: full-start / wide-start; justify-self: center; }
+  .deco { --w: 150px; }
+  .deco.size-s { --w: 120px; }
+  .deco.size-l { --w: 190px; }
+}
 
 /* empty photo slot: photo corners waiting for a print */
 .slot { position: relative; display: grid; place-content: center; gap: .3rem; text-align: center; padding: 1rem; aspect-ratio: 4 / 5; border: 1px dashed var(--rule); background: color-mix(in srgb, var(--rule) 18%, transparent);
@@ -277,6 +338,7 @@ figcaption .hand { font-size: 1.1rem; }
   background-position: 0 0, 100% 0, 0 100%, 100% 100%; background-size: 28px 28px; background-repeat: no-repeat; }
 .slot-label { font-size: .72rem; letter-spacing: .12em; color: var(--muted); }
 .slot .hand { font-size: 1.05rem; }
+.slot--missing { width: 100%; }
 .ph--empty.ph--wide { grid-column: text; }
 .ph--empty.ph--wide .slot { aspect-ratio: 2 / 1; }
 .ph--empty.ph--polaroid .slot { aspect-ratio: 1 / 1; margin-bottom: 10px; }
@@ -284,20 +346,16 @@ figcaption .hand { font-size: 1.1rem; }
 .ph--video { justify-self: center; width: min(100%, 340px); margin: 3rem 0; }
 .ph--video video { width: 100%; height: auto; aspect-ratio: 9 / 16; background: #111; }
 .ph-dl { font-size: .85rem; color: var(--muted); }
+.ending-photo .ph { margin-inline: auto; }
 
 /* ---------- reveal (only when motion is welcome) ---------- */
-.motion [data-reveal] { opacity: 0; transform: translateY(14px); transition: opacity 1s var(--ease), transform 1s var(--ease); }
+.letter { --tilt: -1deg; }
+.motion [data-reveal] { opacity: 0; transform: translateY(14px) rotate(var(--tilt, 0deg)); transition: opacity 1s var(--ease), transform 1s var(--ease); }
 .motion [data-reveal="slow"] { transform: none; transition: opacity 2s ease; }
 .motion [data-reveal="slow"] .ph-open { overflow: hidden; }
 .motion [data-reveal="slow"] img { transform: scale(1.03); transition: transform 2.6s var(--ease); }
-.motion .ph--polaroid[data-reveal] { transform: translateY(14px) rotate(-1.6deg); }
-.motion .ph--polaroid.ph--right[data-reveal] { transform: translateY(14px) rotate(1.8deg); }
-.motion .letter[data-reveal] { transform: translateY(14px) rotate(-1deg); }
-.motion [data-reveal].is-in { opacity: 1; transform: none; }
+.motion [data-reveal].is-in { opacity: 1; transform: rotate(var(--tilt, 0deg)); }
 .motion [data-reveal="slow"].is-in img { transform: none; }
-.motion .ph--polaroid.is-in { transform: rotate(-1.6deg); }
-.motion .ph--polaroid.ph--right.is-in { transform: rotate(1.8deg); }
-.motion .letter.is-in { transform: rotate(-1deg); }
 
 /* ---------- ending ---------- */
 .ending { padding: clamp(7rem, 18vw, 12rem) 0 2rem; text-align: center; }
@@ -392,7 +450,12 @@ figcaption .hand { font-size: 1.1rem; }
 .lightbox::backdrop { background: rgb(12 11 9 / .96); }
 .lightbox figure { margin: 0; height: 100%; display: grid; place-items: center; align-content: center; gap: .8rem; padding: 56px 12px 48px; }
 .lightbox img { max-width: 100%; max-height: calc(100dvh - 140px); width: auto; height: auto; object-fit: contain; }
-.lightbox figcaption { color: #e3cfa9; font-size: 1.1rem; margin: 0; min-height: 1.6em; }
+.lightbox figcaption { display: grid; justify-items: center; gap: .25rem; margin: 0; min-height: 1.6em; text-align: center; }
+.lb-cap { color: #e3cfa9; font-size: 1.1rem; }
+.lb-meta { font-family: var(--f-latin); font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: #b8b0a2; }
+.lb-note { font-size: .9rem; color: #cfc6b6; max-width: 60ch; }
+.lb-cap:empty, .lb-meta:empty, .lb-note:empty { display: none; }
+.lightbox img.is-missing { visibility: hidden; }
 .lb-btn { position: absolute; display: grid; place-items: center; width: 48px; height: 48px; font-size: 1.9rem; line-height: 1; color: #ece6da; background: rgb(255 255 255 / .06); border: 0; border-radius: 50%; cursor: pointer; }
 .lb-btn:hover { background: rgb(255 255 255 / .14); }
 .lb-close { top: 10px; right: 10px; }

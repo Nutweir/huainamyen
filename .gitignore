@@ -1,0 +1,5 @@
+# Raw camera files stay local; tools/prepare_images.py converts them to JPG.
+*.dng
+*.DNG
+*.heic
+*.HEIC
