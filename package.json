@@ -19,7 +19,8 @@
     "migrate:legacy": "tsx scripts/migrate-legacy.ts",
     "verify:migration": "tsx scripts/verify-migration.ts",
     "seed:supabase": "tsx --tsconfig tsconfig.node.json scripts/seed-supabase.ts",
-    "export:trip": "tsx --tsconfig tsconfig.node.json scripts/export-trip.ts"
+    "export:trip": "tsx --tsconfig tsconfig.node.json scripts/export-trip.ts",
+    "backup": "tsx --tsconfig tsconfig.node.json scripts/backup.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

@@ -184,3 +184,36 @@ test("drop a photo file from the computer between two paragraphs", async ({ page
   await expect(rows.nth(3)).toContainText("รูป");
   await expect.poll(() => rows.nth(4).innerText()).toBe(below);
 });
+
+test("trip details tab: the preview sits beside the form and shows the share card", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await page.getByRole("tab", { name: /ข้อมูลทริป/ }).click();
+  const frame = page.locator('iframe[title="ตัวอย่างหน้าบันทึก"]');
+  await expect(frame).toBeVisible();
+  await expect(page.locator(".fixed").filter({ has: frame })).toHaveCount(0); // docked, not a floating panel
+  await expect(page.getByLabel("ตัวอย่างการ์ดตอนแชร์")).toContainText("Huai Nam Yen");
+  await page.locator('[data-preview="#ending"] input').first().click();
+  await expect(page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]').locator("#ending")).toBeInViewport();
+});
+
+test("see what changed since publishing, and the library says where a photo is used", async ({ page }) => {
+  page.on("dialog", d => d.accept());
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await page.locator("[data-row]").nth(2).getByRole("button", { name: /^ลบ/ }).click();
+  await page.getByRole("button", { name: "เทียบกับที่เผยแพร่" }).click();
+  await expect(page.locator("dialog[open]")).toContainText("ลบย่อหน้า");
+  await page.locator("dialog[open]").getByRole("button", { name: "ปิด" }).click();
+
+  await page.goto("admin/media");
+  await page.locator("main ul li button").filter({ has: page.locator('img[alt*="น้องแพะ"]') }).first().click();
+  const used = page.locator("aside").getByRole("link", { name: /Huai Nam Yen · Day 02/ });
+  await expect(used).toBeVisible();
+  await used.click();
+  const row = page.locator('[data-row] button[aria-pressed="true"]');
+  await expect(row).toContainText("ชุดรูป");
+  await expect(row).toBeInViewport();
+});

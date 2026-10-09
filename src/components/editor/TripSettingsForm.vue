@@ -25,6 +25,7 @@ const metaText = computed({
   get: () => t.value.coverMeta.map(([k, v]) => `${k}: ${v}`).join("\n"),
   set: v => { t.value.coverMeta = v.split("\n").map(l => l.split(/:\s*/)).filter(p => p[0]?.trim()).map(([k, ...r]) => [k.trim(), r.join(": ").trim()] as [string, string]); },
 });
+const host = (import.meta.env.VITE_SITE_URL || location.origin).replace(/^https?:\/\//, "").split("/")[0].toUpperCase();
 const seoLen = computed(() => (t.value.seoDescription || t.value.summary).length);
 
 async function checkSlug() {
@@ -53,7 +54,7 @@ function addEnding() {
 
 <template>
   <div class="grid gap-6">
-    <section class="card grid gap-3 p-4" aria-labelledby="s-basic">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-basic" data-preview="#top">
       <h3 id="s-basic" class="font-display text-lg">ข้อมูลทริป</h3>
       <div class="grid gap-3 md:grid-cols-2">
         <label class="field"><span>ชื่อทริป</span><input v-model="t.title" class="input" maxlength="160"></label>
@@ -72,7 +73,7 @@ function addEnding() {
       <label class="flex items-center gap-2 text-sm"><input v-model="t.showPlaceholders" type="checkbox"> แสดงช่องรอรูปเมื่อเปิดด้วย ?slots</label>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="s-img">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-img" data-preview="#top">
       <h3 id="s-img" class="font-display text-lg">รูปปกและรูปตอนแชร์</h3>
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
@@ -90,13 +91,25 @@ function addEnding() {
       </div>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="s-seo">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-seo" data-preview="#top">
       <h3 id="s-seo" class="font-display text-lg">SEO</h3>
       <label class="field"><span>ชื่อหน้า (title)</span><input v-model="t.seoTitle" class="input" :placeholder="`${t.title} — Travel Journal`" maxlength="70"></label>
       <label class="field"><span>คำอธิบาย (description)</span><textarea v-model="t.seoDescription" class="input" rows="2" :placeholder="t.summary" maxlength="300" /><small class="text-xs" :class="seoLen > 160 ? 'text-earth' : 'text-muted'">{{ seoLen }}/160 ตัวอักษร</small></label>
+      <div>
+        <p class="text-sm font-medium">ตอนแชร์ลิงก์ (LINE, Facebook, Messenger) จะเห็นประมาณนี้</p>
+        <div class="mt-1.5 max-w-md overflow-hidden rounded-lg border border-[#dcd6ca] bg-[#f3f1ed]" aria-label="ตัวอย่างการ์ดตอนแชร์">
+          <img v-if="thumb(t.ogImageId || t.coverId)" :src="thumb(t.ogImageId || t.coverId)" alt="" class="aspect-[1200/630] w-full object-cover">
+          <div v-else class="grid aspect-[1200/630] place-items-center bg-[#e6e1d6] text-sm text-muted">ไม่มีรูป — ควรเลือกรูปปก</div>
+          <div class="px-3 py-2">
+            <p class="text-[11px] uppercase tracking-wide text-muted">{{ host }}</p>
+            <p class="line-clamp-2 font-semibold leading-snug">{{ t.seoTitle || `${t.title} — Travel Journal` }}</p>
+            <p class="line-clamp-2 text-sm text-muted">{{ t.seoDescription || t.summary || "(ยังไม่มีคำอธิบาย)" }}</p>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="s-roll">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-roll" data-preview="#roll">
       <h3 id="s-roll" class="font-display text-lg">ม้วนฟิล์ม (ท้ายบันทึก)</h3>
       <div class="flex flex-wrap gap-1.5">
         <img v-for="id in bundle.gallery" :key="id" :src="thumb(id)" alt="" class="h-14 w-20 rounded object-cover">
@@ -105,7 +118,7 @@ function addEnding() {
       <button type="button" class="btn btn-ghost w-fit" @click="pick('gallery')">เลือกรูปในม้วนฟิล์ม (เรียงตามลำดับที่เลือก)</button>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="s-end">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-end" data-preview="#ending">
       <h3 id="s-end" class="font-display text-lg">หน้าปิดท้าย</h3>
       <template v-if="bundle.ending">
         <div class="grid gap-3 md:grid-cols-2">

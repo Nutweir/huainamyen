@@ -2,14 +2,16 @@
 /* Shown when you press Publish: what the check found, each item a link to the spot. Errors hold publishing back. */
 import { computed, ref } from "vue";
 import type { Issue } from "@/services/publishCheck";
+import type { Change } from "@/services/diff";
+import ChangeList from "./ChangeList.vue";
 
-const props = defineProps<{ issues: Issue[]; republish: boolean; busy: boolean; dayLabel: (d: number) => string }>();
-const emit = defineEmits<{ go: [Issue]; publish: [] }>();
+const props = defineProps<{ issues: Issue[]; changes: Change[]; republish: boolean; busy: boolean; dayLabel: (d: number) => string }>();
+const emit = defineEmits<{ go: [Issue | Change]; publish: [] }>();
 const dlg = ref<HTMLDialogElement | null>(null);
 const errors = computed(() => props.issues.filter(i => i.level === "error"));
 const warns = computed(() => props.issues.filter(i => i.level === "warn"));
 const place = (i: Issue) => (i.where.tab === "story" ? props.dayLabel(i.where.day) : i.where.tab === "trip" ? "ข้อมูลทริป" : "ข้อมูลการเดินทาง");
-function go(i: Issue) { dlg.value?.close(); emit("go", i); }
+function go(i: Issue | Change) { dlg.value?.close(); emit("go", i); }
 defineExpose({ open: () => dlg.value?.showModal(), close: () => dlg.value?.close() });
 </script>
 
@@ -17,6 +19,11 @@ defineExpose({ open: () => dlg.value?.showModal(), close: () => dlg.value?.close
   <dialog ref="dlg" class="w-[min(620px,calc(100vw-24px))] rounded-xl border border-rule bg-white p-0 backdrop:bg-black/40" aria-labelledby="pc-title">
     <div class="max-h-[80dvh] overflow-auto p-5">
       <h2 id="pc-title" class="font-display text-xl">{{ republish ? "เผยแพร่ฉบับนี้แทนฉบับที่ผู้อ่านเห็นอยู่?" : "เผยแพร่ทริปนี้ให้ทุกคนอ่านได้?" }}</h2>
+      <details v-if="changes.length && republish" class="mt-3 rounded-lg border border-[#ece6da] p-3" :open="changes.length <= 6">
+        <summary class="cursor-pointer text-sm font-semibold">ผู้อ่านจะเห็นอะไรเปลี่ยนไป ({{ changes.length }})</summary>
+        <ChangeList class="mt-2" :changes="changes" @go="go" />
+      </details>
+      <p v-else-if="republish" class="mt-3 text-sm text-muted">ยังไม่มีอะไรต่างจากฉบับที่ผู้อ่านเห็นอยู่</p>
       <p v-if="!issues.length" class="mt-3 rounded-lg bg-[#e5efe6] px-3 py-2 text-sm text-forest">✓ ตรวจแล้ว ไม่พบอะไรที่ต้องแก้</p>
 
       <section v-if="errors.length" class="mt-4">

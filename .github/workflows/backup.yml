@@ -1,0 +1,50 @@
+name: Backup
+
+# Weekly copy of the journal content (JSON) on the "backups" branch, so nothing depends on the
+# database alone. Never touches main and never deploys.
+# Full backups (drafts, versions, media catalogue) need two repository secrets:
+#   BACKUP_EMAIL / BACKUP_PASSWORD = the owner account. Without them it saves published content only.
+on:
+  schedule:
+    - cron: "0 19 * * 0" # Sundays 19:00 UTC = Monday 02:00 in Thailand
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Export
+        run: npm run backup
+        env:
+          BACKUP_DIR: ${{ runner.temp }}/backup
+          BACKUP_EMAIL: ${{ secrets.BACKUP_EMAIL }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+      - name: Commit to the backups branch
+        run: |
+          git config user.name "journeys-backup"
+          git config user.email "actions@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin backups >/dev/null; then
+            git fetch --depth=1 origin backups
+            git worktree add "$RUNNER_TEMP/branch" origin/backups
+            git -C "$RUNNER_TEMP/branch" switch -c backups
+          else
+            git worktree add --orphan -b backups "$RUNNER_TEMP/branch"
+          fi
+          mkdir -p "$RUNNER_TEMP/branch/backups"
+          cp "$RUNNER_TEMP"/backup/*.json "$RUNNER_TEMP/branch/backups/"
+          cd "$RUNNER_TEMP/branch"
+          git add backups
+          if git diff --cached --quiet; then echo "No changes since the last backup"; exit 0; fi
+          git commit -m "Backup $(date -u +%F)"
+          git push origin backups

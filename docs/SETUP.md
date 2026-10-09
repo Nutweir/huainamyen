@@ -137,6 +137,13 @@ The static site is back within a minute or two; Supabase data is untouched.
 
 ## Backups
 
+**Automatic (weekly):** `.github/workflows/backup.yml` runs every Monday 02:00 (Thailand) and commits a JSON
+copy to the `backups` branch (never to `main`, never deploys). It can also be run by hand: Actions → Backup → Run workflow.
+- Without secrets it saves what readers see (published trips + site settings).
+- For a full backup (drafts, versions, media catalogue) add two repository secrets
+  (Settings → Secrets and variables → Actions → **Secrets**): `BACKUP_EMAIL` and `BACKUP_PASSWORD` = the owner account.
+- Locally: `npm run backup` writes `backups/<date>.json` (git-ignored).
+
 - Admin → ตั้งค่าและสำรองข้อมูล → **ส่งออกทุกทริป**: one JSON file with every trip, drafts included.
   Import always creates new draft trips; it never overwrites.
 - `npm run export:trip` writes each published trip to `exports/` (public data only).

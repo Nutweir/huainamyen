@@ -24,6 +24,10 @@ import { useBlockDrag } from "@/composables/useBlockDrag";
 import { uploadFiles, useFileDrop } from "@/composables/useFileDrop";
 import { checkTrip, type Issue } from "@/services/publishCheck";
 import PublishCheck from "@/components/editor/PublishCheck.vue";
+import ChangeList from "@/components/editor/ChangeList.vue";
+import { diffTrip, type Change } from "@/services/diff";
+import { insertIndex, type Target } from "@/services/autoPlace";
+import AutoPlaceDialog from "@/components/editor/AutoPlaceDialog.vue";
 
 const route = useRoute();
 const ed = useEditorStore();
@@ -44,12 +48,23 @@ const readPref = () => { try { const v = localStorage.getItem("journeys-live-pre
 const live = ref(readPref());
 watch(live, v => { try { localStorage.setItem("journeys-live-preview", v ? "1" : "0"); } catch { /* fine */ } });
 const onXl = (e: MediaQueryListEvent) => { isXl.value = e.matches; };
-const docked = computed(() => live.value && tab.value === "story" && isXl.value);
+const docked = computed(() => live.value && tab.value !== "versions" && isXl.value);
+// on the details tabs the preview shows the part of the page you are editing (data-preview on each section)
+const formFocus = ref("");
+watch(tab, () => { formFocus.value = ""; });
+function onFormFocus(e: Event) {
+  const at = (e.target as HTMLElement).closest<HTMLElement>("[data-preview]")?.dataset.preview;
+  if (at) formFocus.value = at;
+}
 
 async function load() {
   loadError.value = "";
   try { await ed.load(route.params.id as string); }
-  catch (e) { loadError.value = (e as Error).message; }
+  catch (e) { loadError.value = (e as Error).message; return; }
+  // links from elsewhere (media library "used in…"): ?block=<id> or ?tab=trip
+  const q = route.query;
+  if (q.tab === "trip" || q.tab === "notes") tab.value = q.tab;
+  if (typeof q.block === "string") onPick({ blockId: q.block });
 }
 watch(() => route.params.id, id => { if (id) void load(); }, { immediate: true });
 
@@ -58,8 +73,8 @@ const media = computed(() => new Map((ed.bundle?.media || []).map(m => [m.id, m]
 const dayIndex = computed(() => Math.min(ed.selected.day, (b.value?.days.length || 1) - 1));
 const day = computed(() => b.value?.days[dayIndex.value]);
 const previewFocus = computed(() => {
-  if (tab.value === "notes") return "#notes";
-  if (tab.value !== "story") return "#top";
+  if (tab.value === "notes") return formFocus.value || "#notes";
+  if (tab.value !== "story") return formFocus.value || "#top";
   return ed.selected.blockId || (day.value ? `#day-${pad2(day.value.dayNumber)}` : "#top");
 });
 const block = computed(() => day.value?.blocks.find(x => x.id === ed.selected.blockId) || null);
@@ -147,9 +162,11 @@ const { drag, start: startDrag } = useBlockDrag({
 // publish: check first; the dialog lists what to look at, each item takes you there
 const checkDlg = ref<InstanceType<typeof PublishCheck> | null>(null);
 const issues = ref<Issue[]>([]);
+const changes = ref<Change[]>([]);
 function publish() {
   if (!b.value) return;
   issues.value = checkTrip(b.value);
+  changes.value = b.value.trip.publishedVersionId ? diffTrip(ed.published, b.value) : [];
   checkDlg.value?.open();
 }
 async function confirmPublish() {
@@ -158,7 +175,31 @@ async function confirmPublish() {
   catch (e) { toast((e as Error).message, true); }
   finally { publishing.value = false; }
 }
-function goTo(i: Issue) {
+// place photos by time taken: each group goes at the end of its moment
+const placeDlg = ref<InstanceType<typeof AutoPlaceDialog> | null>(null);
+function placeByTime(groups: { assets: MediaAsset[]; target: Target }[]) {
+  let n = 0;
+  ed.batch(() => { for (const g of groups) {
+    onMedia(g.assets);
+    const blocks = b.value!.days[g.target.day].blocks;
+    const at = insertIndex(blocks, g.target.eventId);
+    const sorted = [...g.assets].sort((x, y) => (x.takenTime || "").localeCompare(y.takenTime || ""));
+    if (sorted.length > 1) ed.addBlock(g.target.day, "images", at, { items: sorted.map(a => ({ mediaId: a.id })) });
+    else ed.addBlock(g.target.day, "image", at, { item: { mediaId: sorted[0].id } });
+    n += sorted.length;
+  } });
+  toast(`วาง ${n} รูปแล้ว — ไม่ถูกใจกด Ctrl+Z ย้อนได้`);
+}
+
+// "compare with what readers see"
+const diffDlg = ref<HTMLDialogElement | null>(null);
+function showChanges() {
+  if (!b.value) return;
+  changes.value = diffTrip(ed.published, b.value);
+  diffDlg.value?.showModal();
+}
+function goTo(i: Issue | Change) {
+  diffDlg.value?.close();
   if (i.where.tab !== "story") { tab.value = i.where.tab; return; }
   tab.value = "story";
   ed.selected = { day: i.where.day, blockId: i.where.blockId || null };
@@ -208,9 +249,11 @@ async function dropFiles(files: File[], index: number | null) {
   const blocks = b.value!.days[d].blocks;
   let pos = afterId ? blocks.findIndex(x => x.id === afterId) + 1 : 0;
   const photos = assets.filter(a => a.kind === "image"), clips = assets.filter(a => a.kind === "video");
-  if (photos.length > 1) ed.addBlock(d, "images", pos++, { items: photos.map(a => ({ mediaId: a.id })) });
-  else if (photos.length) ed.addBlock(d, "image", pos++, { item: { mediaId: photos[0].id } });
-  clips.forEach(c => ed.addBlock(d, "video", pos++, { mediaId: c.id }));
+  ed.batch(() => {
+    if (photos.length > 1) ed.addBlock(d, "images", pos++, { items: photos.map(a => ({ mediaId: a.id })) });
+    else if (photos.length) ed.addBlock(d, "image", pos++, { item: { mediaId: photos[0].id } });
+    clips.forEach(c => ed.addBlock(d, "video", pos++, { mediaId: c.id }));
+  });
   toast(`เพิ่ม ${assets.length} ไฟล์แล้ว — ลองเปลี่ยนรูปแบบดูในตัวอย่างสด`);
 }
 async function unpublish() {
@@ -268,6 +311,7 @@ onBeforeRouteLeave(async () => {
         <button v-if="ed.dirty" class="btn btn-ghost min-h-9 px-3" @click="ed.save()">บันทึก</button>
         <button class="btn btn-ghost min-h-9 px-3" :class="live ? 'bg-[#eee8dc]' : ''" :aria-pressed="live" title="ดูหน้าเว็บเปลี่ยนตามที่พิมพ์ ก่อนกดบันทึก" @click="live = !live">ตัวอย่างสด</button>
         <RouterLink :to="`/admin/trips/${b.trip.id}/preview`" target="_blank" class="btn btn-ghost min-h-9 px-3" title="เปิดตัวอย่างในแท็บใหม่">แท็บใหม่ ↗</RouterLink>
+        <button v-if="b.trip.publishedVersionId" class="btn btn-ghost min-h-9 px-3" title="ดูว่าฉบับนี้ต่างจากที่ผู้อ่านเห็นอยู่ตรงไหน" @click="showChanges">เทียบกับที่เผยแพร่</button>
         <button class="btn btn-ghost min-h-9 px-3" title="ดาวน์โหลดทริปนี้เป็น JSON" @click="download">ส่งออก</button>
         <button v-if="b.trip.status === 'published'" class="btn btn-ghost min-h-9 px-3" @click="unpublish">ยกเลิกเผยแพร่</button>
         <button class="btn min-h-9 px-4" :disabled="publishing || ed.state === 'conflict'" title="ตรวจก่อนแล้วค่อยเผยแพร่" @click="publish">{{ publishing ? "กำลังเผยแพร่…" : b.trip.publishedAt ? "เผยแพร่ฉบับนี้" : "เผยแพร่" }}</button>
@@ -294,8 +338,13 @@ onBeforeRouteLeave(async () => {
       <button v-for="[k, l] in ([['story', 'เรื่องราว'], ['trip', 'ข้อมูลทริป · ปก · SEO'], ['notes', 'ข้อมูลการเดินทาง'], ['versions', 'เวอร์ชัน']] as const)" :key="k" role="tab" :aria-selected="tab === k" class="shrink-0 rounded-full px-4 py-1.5 text-sm" :class="tab === k ? 'bg-ink text-white' : 'border border-rule bg-white'" @click="tab = k">{{ l }}</button>
     </div>
 
-    <TripSettingsForm v-if="tab === 'trip'" class="mt-4" :bundle="b" :media="media" @media="onMedia" />
-    <NotesForm v-else-if="tab === 'notes'" class="mt-4" :bundle="b" />
+    <div v-if="tab === 'trip' || tab === 'notes'" class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4" :class="docked ? 'xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]' : ''" @focusin="onFormFocus" @pointerdown="onFormFocus">
+      <TripSettingsForm v-if="tab === 'trip'" class="min-w-0" :bundle="b" :media="media" @media="onMedia" />
+      <NotesForm v-else class="min-w-0" :bundle="b" />
+      <div v-if="docked" class="min-w-0 xl:sticky xl:top-32 xl:h-[calc(100dvh-9rem)]">
+        <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" @pick="onPick" />
+      </div>
+    </div>
     <VersionPanel v-else-if="tab === 'versions'" class="mt-4" />
 
     <div v-else class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" :class="docked ? 'xl:grid-cols-[minmax(0,1fr)_380px_minmax(400px,1fr)]' : 'xl:grid-cols-[220px_minmax(0,1fr)_400px]'">
@@ -366,6 +415,7 @@ onBeforeRouteLeave(async () => {
         </ol>
         <p v-if="!day.blocks.length" class="rounded-lg border border-dashed border-rule p-6 text-center text-muted">วันนี้ยังว่าง — เริ่มจาก “ช่วงเวลา” แล้วเขียนต่อด้านล่าง</p>
         <div class="relative mt-2">
+          <button class="btn btn-ghost mb-1.5 w-full" title="ระบบดูวันเวลาที่ถ่ายในรูป แล้วเสนอว่าควรอยู่ช่วงไหน" @click="placeDlg?.open()">จัดรูปตามเวลาที่ถ่าย…</button>
           <button class="btn w-full" :aria-expanded="addOpen" @click="addOpen = !addOpen">+ เพิ่มเนื้อหา{{ block ? " ต่อจากส่วนที่เลือก" : " ท้ายวัน" }}</button>
           <div v-if="addOpen" class="card absolute inset-x-0 z-10 mt-1 grid grid-cols-2 gap-1 p-2 shadow-lg sm:grid-cols-3">
             <button v-for="t in BLOCK_TYPES" :key="t" class="rounded-md px-2 py-2 text-left text-sm hover:bg-[#f4f1ea]" @click="add(t)">{{ BLOCK_LABELS[t] }}</button>
@@ -393,7 +443,17 @@ onBeforeRouteLeave(async () => {
       </div>
     </div>
 
-    <PublishCheck ref="checkDlg" :issues="issues" :republish="!!b.trip.publishedAt" :busy="publishing" :day-label="dayLabel" @go="goTo" @publish="confirmPublish" />
+    <dialog ref="diffDlg" class="w-[min(620px,calc(100vw-24px))] rounded-xl border border-rule bg-white p-0 backdrop:bg-black/40" aria-labelledby="diff-title">
+      <div class="max-h-[80dvh] overflow-auto p-5">
+        <h2 id="diff-title" class="font-display text-xl">ต่างจากฉบับที่ผู้อ่านเห็นอยู่</h2>
+        <p class="mt-1 text-sm text-muted">เผยแพร่ล่าสุด {{ b.trip.publishedAt ? new Date(b.trip.publishedAt).toLocaleString("th-TH") : "—" }} · คลิกรายการเพื่อไปที่จุดนั้น</p>
+        <ChangeList v-if="changes.length" class="mt-3" :changes="changes" @go="goTo" />
+        <p v-else class="mt-3 rounded-lg bg-[#e5efe6] px-3 py-2 text-sm text-forest">✓ ไม่มีอะไรเปลี่ยน — ฉบับนี้เหมือนที่ผู้อ่านเห็นอยู่</p>
+      </div>
+      <div class="flex justify-end border-t border-[#ece6da] p-4"><button class="btn btn-ghost" @click="diffDlg?.close()">ปิด</button></div>
+    </dialog>
+    <AutoPlaceDialog ref="placeDlg" :bundle="b" @apply="placeByTime" />
+    <PublishCheck ref="checkDlg" :issues="issues" :changes="changes" :republish="!!b.trip.publishedAt" :busy="publishing" :day-label="dayLabel" @go="goTo" @publish="confirmPublish" />
 
     <!-- live preview as a side panel (narrower screens, and the other tabs) -->
     <div v-if="live && !docked" class="fixed bottom-2 right-2 top-[7.5rem] z-40 w-[min(440px,calc(100vw-1rem))] shadow-2xl">

@@ -14,6 +14,7 @@ const pairs = (list: [string, string | number][]) => list.map(([k, v]) => `${k}:
 const parse = (v: string) => v.split("\n").map(l => l.split(/:\s*/)).filter(p => p[0]?.trim()).map(([k, ...r]) => [k.trim(), r.join(": ").trim()] as [string, string]);
 const facts = computed({ get: () => pairs(n.value?.facts || []), set: v => { n.value!.facts = parse(v); } });
 const split = computed({ get: () => pairs(n.value?.split || []), set: v => { n.value!.split = parse(v).map(([k, x]) => [k, Number(x.replace(/[^\d.]/g, "")) || 0]); } });
+const anchorOf = (kind: string) => `#${n.value?.sections.find(s => s.kind === kind)?.anchor || "notes"}`;
 const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Number(String(e.amount).replace(/[^\d.]/g, "")) || 0), 0));
 </script>
 
@@ -23,7 +24,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
     <button type="button" class="btn mt-3" @click="create">+ เพิ่มข้อมูลการเดินทาง</button>
   </div>
   <div v-else class="grid gap-6">
-    <section class="card grid gap-3 p-4" aria-labelledby="n-intro">
+    <section class="card grid gap-3 p-4" aria-labelledby="n-intro" data-preview="#notes">
       <h3 id="n-intro" class="font-display text-lg">บทนำ</h3>
       <label class="field"><span>คำนำ</span><textarea v-model="n.lede" class="input" rows="2" /></label>
       <label class="field"><span>หมายเหตุ</span><textarea v-model="n.disclaimer" class="input" rows="2" /></label>
@@ -32,7 +33,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
 
     <section class="card grid gap-3 p-4" aria-labelledby="n-sec">
       <h3 id="n-sec" class="font-display text-lg">หัวข้อ</h3>
-      <details v-for="(s, i) in n.sections" :key="i" class="rounded-lg border border-[#ece6da] p-3">
+      <details v-for="(s, i) in n.sections" :key="i" class="rounded-lg border border-[#ece6da] p-3" :data-preview="`#${s.anchor}`">
         <summary class="cursor-pointer font-medium">{{ s.title || "(ไม่มีชื่อ)" }} <span class="text-xs text-muted">#{{ s.anchor }}</span></summary>
         <div class="mt-3 grid gap-2">
           <div class="grid grid-cols-3 gap-2">
@@ -50,7 +51,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
       <button type="button" class="btn btn-ghost w-fit" @click="n.sections.push({ anchor: `note-${n.sections.length + 1}`, title: '', en: '', kind: 'html', html: '' })">+ เพิ่มหัวข้อ</button>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="n-place">
+    <section class="card grid gap-3 p-4" aria-labelledby="n-place" :data-preview="anchorOf('map')">
       <h3 id="n-place" class="font-display text-lg">สถานที่</h3>
       <div v-for="(p, i) in n.places" :key="i" class="grid gap-2 rounded-lg border border-[#ece6da] p-3 md:grid-cols-2">
         <label class="field"><span>ชื่อ</span><input v-model="p.name" class="input"></label>
@@ -63,7 +64,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
       <label class="field"><span>หมายเหตุใต้แผนที่</span><input v-model="n.mapNote" class="input"></label>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="n-exp">
+    <section class="card grid gap-3 p-4" aria-labelledby="n-exp" :data-preview="anchorOf('expenses')">
       <h3 id="n-exp" class="font-display text-lg">ค่าใช้จ่าย</h3>
       <label class="field"><span>ข้อความก่อนตาราง</span><textarea v-model="n.expensesBefore" class="input" rows="2" /></label>
       <div class="overflow-x-auto">
@@ -85,7 +86,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
       <label class="field"><span>หมายเหตุการหาร</span><input v-model="n.splitNote" class="input"></label>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="n-con">
+    <section class="card grid gap-3 p-4" aria-labelledby="n-con" :data-preview="anchorOf('contacts')">
       <h3 id="n-con" class="font-display text-lg">ติดต่อ</h3>
       <div v-for="(c, i) in n.contacts" :key="i" class="grid gap-2 rounded-lg border border-[#ece6da] p-3 md:grid-cols-2">
         <label class="field"><span>ชื่อ</span><input v-model="c.title" class="input"></label>

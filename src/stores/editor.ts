@@ -24,6 +24,12 @@ export const useEditorStore = defineStore("editor", () => {
   const recoverable = shallowRef<{ bundle: TripBundle; at: string } | null>(null);
   const selected = ref<{ day: number; blockId: string | null }>({ day: 0, blockId: null });
   const versions = ref<Omit<ContentVersion, "snapshot">[]>([]);
+  /** What readers see now, to compare the working copy against. */
+  const published = shallowRef<TripBundle | null>(null);
+  async function loadPublished() {
+    const id = bundle.value?.trip.publishedVersionId;
+    published.value = id ? (await repo.getVersion(id).catch(() => null))?.snapshot || null : null;
+  }
 
   let timer = 0, retry = 0, version = 0, savingVersion = 0, quiet = false, saving: Promise<void> | null = null;
 
@@ -33,7 +39,15 @@ export const useEditorStore = defineStore("editor", () => {
   let committed = "", historyTimer = 0, applyingHistory = false;
   const pendingEdit = ref(false);
   const snap = () => (bundle.value ? JSON.stringify({ ...bundle.value, media: [] }) : "");
+  let batching = false;
+  /** Several changes as one undo step (e.g. placing a batch of photos). */
+  function batch(fn: () => void) {
+    commit();
+    batching = true;
+    try { fn(); } finally { batching = false; queueMicrotask(commit); }
+  }
   function commit() {
+    if (batching) return;
     clearTimeout(historyTimer);
     pendingEdit.value = false;
     const now = snap();
@@ -96,6 +110,7 @@ export const useEditorStore = defineStore("editor", () => {
     if (draft && contentOf(draft.bundle) !== contentOf(r.bundle)) recoverable.value = { bundle: draft.bundle, at: draft.at };
     else if (draft) await dropDraft(id);
     void refreshVersions();
+    void loadPublished();
   }
 
   watch(bundle, () => {
@@ -230,6 +245,7 @@ export const useEditorStore = defineStore("editor", () => {
     queueMicrotask(() => { quiet = false; });
     savedAt.value = r.savedAt;
     await refreshVersions();
+    await loadPublished();
   }
   async function refreshVersions() { if (bundle.value) versions.value = await repo.listVersions(bundle.value.trip.id); }
   async function saveVersion(label: string) { await save(); await repo.saveVersion(bundle.value!, label || "บันทึกเวอร์ชัน"); await refreshVersions(); }
@@ -247,7 +263,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   return {
     bundle, savedAt, state, message, lastSaved, recoverable, selected, versions, dirty,
-    undo, redo, canUndo, canRedo,
+    undo, redo, canUndo, canRedo, published, batch,
     load, save, overwrite, discardLocal, restoreDraft, ignoreDraft,
     addBlock, removeBlock, duplicateBlock, moveBlock, addDay, removeDay, moveDay, useMedia,
     publish, setStatus, saveVersion, restoreVersion, refreshVersions,
