@@ -20,6 +20,7 @@ import NotesForm from "@/components/editor/NotesForm.vue";
 import VersionPanel from "@/components/editor/VersionPanel.vue";
 import LivePreview from "@/components/editor/LivePreview.vue";
 import QuickInsert, { type InsertMode } from "@/components/editor/QuickInsert.vue";
+import { useBlockDrag } from "@/composables/useBlockDrag";
 
 const route = useRoute();
 const ed = useEditorStore();
@@ -127,13 +128,18 @@ function quickInsert(mode: InsertMode, assets: MediaAsset[]) {
   toast(mode === "beside" ? "แปะรูปข้างย่อหน้าแล้ว — เปลี่ยนซ้าย/ขวาได้ที่ ตำแหน่ง" : "เพิ่มแล้ว — ลองเปลี่ยนรูปแบบดูในตัวอย่างสด");
 }
 
-// drag and drop (handle only, so text inside stays selectable)
-const dragFrom = ref<number | null>(null);
-const dragOver = ref<number | null>(null);
-function drop(to: number) {
-  if (dragFrom.value !== null && dragFrom.value !== to) ed.moveBlock(dayIndex.value, dragFrom.value, to > dragFrom.value ? to - 1 : to);
-  dragFrom.value = dragOver.value = null;
-}
+// drag to reorder (mouse: the whole row; touch: the ⋮⋮ handle); drop on a day button to move it there
+const blockList = ref<HTMLElement | null>(null);
+const { drag, start: startDrag } = useBlockDrag({
+  list: () => blockList.value,
+  currentDay: () => dayIndex.value,
+  onMove: (from, to) => ed.moveBlock(dayIndex.value, from, to),
+  onMoveToDay: (from, to) => {
+    const x = day.value!.blocks[from];
+    moveToDay(x, to);
+    toast(`ย้ายไป Day ${pad2(b.value!.days[to].dayNumber)} แล้ว (ท้ายวัน)`);
+  },
+});
 
 async function publish() {
   if (!b.value) return;
@@ -224,7 +230,11 @@ onBeforeRouteLeave(async () => {
       <aside class="min-w-0 lg:col-span-2" :class="docked ? 'xl:col-span-3' : 'xl:col-span-1'" aria-label="วัน">
         <ol class="flex gap-1.5 overflow-x-auto" :class="docked ? '' : 'xl:grid'">
           <li v-for="(d, i) in b.days" :key="d.id" class="shrink-0">
-            <button class="w-full rounded-lg px-3 py-2 text-left text-sm" :class="i === dayIndex ? 'bg-ink text-white' : 'border border-rule bg-white'" :aria-current="i === dayIndex" @click="ed.selected = { day: i, blockId: null }">
+            <button
+              class="w-full rounded-lg px-3 py-2 text-left text-sm transition" :data-day-drop="i"
+              :class="[i === dayIndex ? 'bg-ink text-white' : 'border border-rule bg-white', drag?.day === i ? 'ring-2 ring-forest ring-offset-2' : '', drag && i !== dayIndex ? 'border-dashed border-forest' : '']"
+              :aria-current="i === dayIndex" @click="ed.selected = { day: i, blockId: null }"
+            >
               <span class="block font-medium">Day {{ pad2(d.dayNumber) }}</span>
               <span class="block text-xs opacity-75">{{ d.date || "ไม่ระบุวันที่" }} · {{ d.blocks.length }} ส่วน</span>
             </button>
@@ -249,14 +259,16 @@ onBeforeRouteLeave(async () => {
 
       <!-- blocks -->
       <section v-if="day" class="min-w-0" aria-label="เนื้อหาของวัน">
-        <ol class="grid grid-cols-[minmax(0,1fr)] gap-1.5">
+        <p v-if="drag" class="mb-1.5 text-xs text-forest" role="status">ปล่อยเพื่อวางตรงเส้นสีเขียว · ลากไปที่ปุ่ม Day เพื่อย้ายวัน · Esc ยกเลิก</p>
+        <ol ref="blockList" class="relative grid grid-cols-[minmax(0,1fr)] gap-1.5">
           <li
-            v-for="(x, i) in day.blocks" :key="x.id"
-            class="group flex min-w-0 items-stretch rounded-lg border bg-white transition"
-            :class="[x.id === ed.selected.blockId ? 'border-forest ring-1 ring-forest' : 'border-[#ece6da]', dragOver === i ? 'border-t-4 border-t-forest' : '', x.type === 'event' ? 'mt-3 bg-[#f4f1ea]' : '']"
-            @dragover.prevent="dragOver = i" @drop.prevent="drop(i)"
+            v-for="(x, i) in day.blocks" :key="x.id" data-row
+            class="group flex min-w-0 cursor-grab items-stretch rounded-lg border bg-white"
+            :class="[x.id === ed.selected.blockId ? 'border-forest ring-1 ring-forest' : 'border-[#ece6da]', x.type === 'event' ? 'mt-3 bg-[#f4f1ea]' : '', drag?.from === i ? 'pointer-events-none relative z-20 opacity-90 shadow-xl' : drag ? '' : 'transition']"
+            :style="drag?.from === i ? { transform: `translateY(${drag.dy}px) rotate(-0.4deg)` } : undefined"
+            @pointerdown="startDrag($event, i, false)"
           >
-            <span class="flex cursor-grab items-center px-1.5 text-muted" draggable="true" title="ลากเพื่อย้าย" aria-hidden="true" @dragstart="dragFrom = i" @dragend="dragFrom = dragOver = null">⋮⋮</span>
+            <span class="flex touch-none items-center px-1.5 text-muted" title="ลากเพื่อย้าย" aria-hidden="true" @pointerdown.stop="startDrag($event, i, true)">⋮⋮</span>
             <button class="flex min-w-0 flex-1 items-center gap-2 py-2 text-left" :aria-pressed="x.id === ed.selected.blockId" @click="select(x.id)">
               <img v-if="thumbOf(x)" :src="thumbOf(x)" alt="" class="h-10 w-14 shrink-0 rounded object-cover">
               <span class="min-w-0 flex-1">
@@ -264,14 +276,14 @@ onBeforeRouteLeave(async () => {
                 <span class="block truncate text-sm" :class="x.type === 'event' ? 'font-semibold' : ''">{{ summary(x) }}</span>
               </span>
             </button>
-            <span class="flex items-center gap-0.5 pr-1 text-sm opacity-70 group-hover:opacity-100">
+            <span class="flex cursor-default items-center gap-0.5 pr-1 text-sm opacity-70 group-hover:opacity-100" data-no-drag>
               <button class="rounded px-1.5 py-1 hover:bg-[#eee8dc] disabled:opacity-30" :disabled="i === 0" :aria-label="`เลื่อน ${BLOCK_LABELS[x.type]} ขึ้น`" @click="ed.moveBlock(dayIndex, i, i - 1)">↑</button>
               <button class="rounded px-1.5 py-1 hover:bg-[#eee8dc] disabled:opacity-30" :disabled="i === day.blocks.length - 1" :aria-label="`เลื่อน ${BLOCK_LABELS[x.type]} ลง`" @click="ed.moveBlock(dayIndex, i, i + 1)">↓</button>
               <button class="rounded px-1.5 py-1 hover:bg-[#eee8dc]" title="ทำสำเนา" :aria-label="`ทำสำเนา ${BLOCK_LABELS[x.type]}`" @click="ed.duplicateBlock(dayIndex, x.id)">⧉</button>
               <button class="rounded px-1.5 py-1 text-danger hover:bg-[#fbeee9]" :aria-label="`ลบ ${BLOCK_LABELS[x.type]}`" @click="del(x)">✕</button>
             </span>
           </li>
-          <li class="h-6" @dragover.prevent="dragOver = day.blocks.length" @drop.prevent="drop(day.blocks.length)" />
+          <div v-if="drag && drag.day === null" class="pointer-events-none absolute inset-x-0 z-10 h-1 rounded-full bg-forest" :style="{ top: `${drag.line}px` }" aria-hidden="true" />
         </ol>
         <p v-if="!day.blocks.length" class="rounded-lg border border-dashed border-rule p-6 text-center text-muted">วันนี้ยังว่าง — เริ่มจาก “ช่วงเวลา” แล้วเขียนต่อด้านล่าง</p>
         <div class="relative mt-2">

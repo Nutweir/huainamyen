@@ -45,4 +45,6 @@
   .admin-app .rich { min-height: 2.2em; outline: none; line-height: 1.8; }
   .admin-app .rich p { margin: 0; }
   .admin-app .ProseMirror:focus { outline: none; }
+  /* while a block is being dragged */
+  .is-dragging, .is-dragging * { cursor: grabbing !important; user-select: none; }
 }

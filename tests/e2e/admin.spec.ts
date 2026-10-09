@@ -94,3 +94,30 @@ test("add a photo right where you are writing, and see it in the preview", async
   await expect(beside).toBeVisible();
   await expect(beside.locator("[data-block]").first()).toHaveCSS("outline-style", "dashed");
 });
+
+test("drag blocks with the mouse to reorder them, or onto another day", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  const rows = page.locator("[data-row]");
+  await expect(rows.nth(3)).toContainText("ถ้าดูจากเวลาแล้ว");
+  const from = (await rows.nth(3).boundingBox())!, to = (await rows.nth(1).boundingBox())!;
+  await page.mouse.move(from.x + 80, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 80, to.y + 4, { steps: 8 });
+  await expect(page.locator("ol .bg-forest.h-1")).toBeVisible(); // the drop line
+  await page.mouse.up();
+  await expect(rows.nth(1)).toContainText("ถ้าดูจากเวลาแล้ว");
+  await expect(rows.nth(2)).toContainText("เช้าวันนั้น");
+
+  // onto the Day 02 button: moves to the end of that day
+  const day2 = page.locator('[data-day-drop="1"]');
+  const before = Number((await day2.innerText()).match(/(\d+) ส่วน/)![1]);
+  const src = (await rows.nth(1).boundingBox())!, target = (await day2.boundingBox())!;
+  await page.mouse.move(src.x + 80, src.y + src.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + 20, target.y + target.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(day2).toContainText(`${before + 1} ส่วน`);
+  await expect(page.locator("[data-row]").last()).toContainText("ถ้าดูจากเวลาแล้ว");
+});

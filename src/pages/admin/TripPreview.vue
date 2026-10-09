@@ -53,7 +53,11 @@ async function show(focus: string) {
   if (!el) return;
   const r = el.getBoundingClientRect();
   // move only when you switch blocks or the block has left the screen, so typing doesn't jump around
-  if (focus !== lastFocus || r.bottom < 0 || r.top > innerHeight) el.scrollIntoView({ block: focus.startsWith("#") ? "start" : "center", behavior: "instant" as ScrollBehavior });
+  // scroll this frame only: scrollIntoView would also scroll the editor page around the frame
+  if (focus !== lastFocus || r.bottom < 0 || r.top > innerHeight) {
+    const top = focus.startsWith("#") ? r.top + scrollY : r.top + scrollY - (innerHeight - r.height) / 2;
+    scrollTo({ top: Math.max(0, top), behavior: "instant" as ScrollBehavior });
+  }
   lastFocus = focus;
 }
 
