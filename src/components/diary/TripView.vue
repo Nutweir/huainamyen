@@ -13,7 +13,7 @@ import FilmRoll from "./FilmRoll.vue";
 import TravelNotes from "./TravelNotes.vue";
 import Lightbox from "@/components/gallery/Lightbox.vue";
 
-const props = defineProps<{ bundle: TripBundle; showSlots?: boolean; backTo?: string }>();
+const props = defineProps<{ bundle: TripBundle; showSlots?: boolean; backTo?: string; live?: boolean }>();
 const bundleRef = toRef(props, "bundle");
 const { byId, url, srcset } = useMedia(bundleRef as never);
 const root = ref<HTMLElement | null>(null);
@@ -42,7 +42,7 @@ onMounted(async () => {
   keepMaiYamok(el);
   behaviour.moods(el);
   behaviour.progress(el.querySelector(".tb-progress span"), [...el.querySelectorAll<HTMLAnchorElement>(".tb-links a")]);
-  behaviour.reveal(el);
+  if (!props.live) behaviour.reveal(el); // the live admin preview re-renders as you type: show everything at once
   behaviour.videos(el);
   behaviour.roll(el.querySelector(".roll .strip"), el.querySelector(".roll-toggle"));
   jumpToHash();

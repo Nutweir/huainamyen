@@ -3,7 +3,7 @@ import { defineConfigWithVueTs, vueTsConfigs } from "@vue/eslint-config-typescri
 import globals from "globals";
 
 export default defineConfigWithVueTs(
-  { ignores: ["dist/**", "legacy/**", "public/**", "node_modules/**", "playwright-report/**", "test-results/**", ".tmp/**"] },
+  { ignores: ["dist/**", "legacy/**", "public/**", "node_modules/**", "playwright-report/**", "test-results/**", ".tmp/**", ".vite/**"] },
   pluginVue.configs["flat/recommended"],
   vueTsConfigs.recommended,
   {

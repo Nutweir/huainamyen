@@ -18,6 +18,7 @@ import BlockEditor from "@/components/editor/BlockEditor.vue";
 import TripSettingsForm from "@/components/editor/TripSettingsForm.vue";
 import NotesForm from "@/components/editor/NotesForm.vue";
 import VersionPanel from "@/components/editor/VersionPanel.vue";
+import LivePreview from "@/components/editor/LivePreview.vue";
 
 const route = useRoute();
 const ed = useEditorStore();
@@ -30,6 +31,16 @@ const publishing = ref(false);
 const editorPanel = ref<HTMLElement | null>(null);
 const wide = typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
 
+// live preview: a column beside the story on wide screens, a side panel otherwise
+const xlQuery = typeof window !== "undefined" ? window.matchMedia("(min-width: 1280px)") : null;
+const isXl = ref(!!xlQuery?.matches);
+// on by default where it fits beside the editor; your choice is remembered
+const readPref = () => { try { const v = localStorage.getItem("journeys-live-preview"); return v === null ? isXl.value : v === "1"; } catch { return isXl.value; } };
+const live = ref(readPref());
+watch(live, v => { try { localStorage.setItem("journeys-live-preview", v ? "1" : "0"); } catch { /* fine */ } });
+const onXl = (e: MediaQueryListEvent) => { isXl.value = e.matches; };
+const docked = computed(() => live.value && tab.value === "story" && isXl.value);
+
 async function load() {
   loadError.value = "";
   try { await ed.load(route.params.id as string); }
@@ -41,6 +52,11 @@ const b = computed(() => ed.bundle);
 const media = computed(() => new Map((ed.bundle?.media || []).map(m => [m.id, m])));
 const dayIndex = computed(() => Math.min(ed.selected.day, (b.value?.days.length || 1) - 1));
 const day = computed(() => b.value?.days[dayIndex.value]);
+const previewFocus = computed(() => {
+  if (tab.value === "notes") return "#notes";
+  if (tab.value !== "story") return "#top";
+  return ed.selected.blockId || (day.value ? `#day-${pad2(day.value.dayNumber)}` : "#top");
+});
 const block = computed(() => day.value?.blocks.find(x => x.id === ed.selected.blockId) || null);
 const routeText = computed({ get: () => day.value?.route.join(" → ") || "", set: v => { if (day.value) day.value.route = v.split(/→|->|,/).map(s => s.trim()).filter(Boolean); } });
 
@@ -131,8 +147,8 @@ watch(() => ed.state, s => { if (s === "saved" && b.value) channel?.postMessage(
 function keys(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void ed.save(); }
 }
-onMounted(() => addEventListener("keydown", keys));
-onBeforeUnmount(() => { removeEventListener("keydown", keys); channel?.close(); });
+onMounted(() => { addEventListener("keydown", keys); xlQuery?.addEventListener("change", onXl); });
+onBeforeUnmount(() => { removeEventListener("keydown", keys); xlQuery?.removeEventListener("change", onXl); channel?.close(); });
 onBeforeRouteLeave(async () => {
   if (!ed.dirty) return true;
   await ed.save();
@@ -146,7 +162,7 @@ onBeforeRouteLeave(async () => {
     <RouterLink to="/admin/trips" class="btn btn-ghost mt-4">กลับไปรายการทริป</RouterLink>
   </main>
   <main v-else-if="!b" class="px-4 py-10 text-center text-muted">กำลังเปิดทริป…</main>
-  <main v-else class="mx-auto max-w-[1400px] px-4 pb-16">
+  <main v-else class="mx-auto px-4 pb-16" :class="docked ? 'max-w-[1900px]' : 'max-w-[1400px]'">
     <!-- top bar -->
     <div class="sticky top-14 z-20 -mx-4 flex flex-wrap items-center gap-2 border-b border-[#ece6da] bg-[#faf8f3]/95 px-4 py-2 backdrop-blur">
       <RouterLink to="/admin/trips" class="text-sm text-muted" aria-label="กลับไปรายการทริป">←</RouterLink>
@@ -155,7 +171,8 @@ onBeforeRouteLeave(async () => {
       <span class="text-sm" :class="stateClass" role="status" aria-live="polite">{{ STATE_TEXT[ed.state] }}</span>
       <div class="ml-auto flex flex-wrap gap-1.5">
         <button v-if="ed.dirty" class="btn btn-ghost min-h-9 px-3" @click="ed.save()">บันทึก</button>
-        <RouterLink :to="`/admin/trips/${b.trip.id}/preview`" target="_blank" class="btn btn-ghost min-h-9 px-3">ดูตัวอย่าง</RouterLink>
+        <button class="btn btn-ghost min-h-9 px-3" :class="live ? 'bg-[#eee8dc]' : ''" :aria-pressed="live" title="ดูหน้าเว็บเปลี่ยนตามที่พิมพ์ ก่อนกดบันทึก" @click="live = !live">ตัวอย่างสด</button>
+        <RouterLink :to="`/admin/trips/${b.trip.id}/preview`" target="_blank" class="btn btn-ghost min-h-9 px-3" title="เปิดตัวอย่างในแท็บใหม่">แท็บใหม่ ↗</RouterLink>
         <button class="btn btn-ghost min-h-9 px-3" title="ดาวน์โหลดทริปนี้เป็น JSON" @click="download">ส่งออก</button>
         <button v-if="b.trip.status === 'published'" class="btn btn-ghost min-h-9 px-3" @click="unpublish">ยกเลิกเผยแพร่</button>
         <button class="btn min-h-9 px-4" :disabled="publishing || ed.state === 'conflict'" @click="publish">{{ publishing ? "กำลังเผยแพร่…" : b.trip.publishedAt ? "เผยแพร่ฉบับนี้" : "เผยแพร่" }}</button>
@@ -186,10 +203,10 @@ onBeforeRouteLeave(async () => {
     <NotesForm v-else-if="tab === 'notes'" class="mt-4" :bundle="b" />
     <VersionPanel v-else-if="tab === 'versions'" class="mt-4" />
 
-    <div v-else class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[220px_minmax(0,1fr)_400px]">
+    <div v-else class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" :class="docked ? 'xl:grid-cols-[minmax(0,1fr)_380px_minmax(400px,1fr)]' : 'xl:grid-cols-[220px_minmax(0,1fr)_400px]'">
       <!-- days -->
-      <aside class="min-w-0 lg:col-span-2 xl:col-span-1" aria-label="วัน">
-        <ol class="flex gap-1.5 overflow-x-auto xl:grid">
+      <aside class="min-w-0 lg:col-span-2" :class="docked ? 'xl:col-span-3' : 'xl:col-span-1'" aria-label="วัน">
+        <ol class="flex gap-1.5 overflow-x-auto" :class="docked ? '' : 'xl:grid'">
           <li v-for="(d, i) in b.days" :key="d.id" class="shrink-0">
             <button class="w-full rounded-lg px-3 py-2 text-left text-sm" :class="i === dayIndex ? 'bg-ink text-white' : 'border border-rule bg-white'" :aria-current="i === dayIndex" @click="ed.selected = { day: i, blockId: null }">
               <span class="block font-medium">Day {{ pad2(d.dayNumber) }}</span>
@@ -197,10 +214,10 @@ onBeforeRouteLeave(async () => {
             </button>
           </li>
         </ol>
-        <button class="btn btn-ghost mt-2 w-full sm:w-auto xl:w-full" @click="ed.addDay()">+ เพิ่มวัน</button>
+        <button class="btn btn-ghost mt-2 w-full sm:w-auto" :class="docked ? '' : 'xl:w-full'" @click="ed.addDay()">+ เพิ่มวัน</button>
         <details v-if="day" class="card mt-3 p-3" :open="wide">
           <summary class="cursor-pointer text-sm font-medium">ตั้งค่า Day {{ pad2(day.dayNumber) }}</summary>
-          <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-1">
+          <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4" :class="docked ? '' : 'xl:grid-cols-1'">
             <label class="field"><span>วันที่</span><input v-model="day.date" class="input" type="date"></label>
             <label class="field"><span>เส้นทาง (คั่นด้วย →)</span><input v-model.lazy="routeText" class="input"></label>
             <label class="field"><span>บรรยากาศเริ่มต้น</span><select v-model="day.mood" class="input"><option v-for="m in MOODS" :key="m" :value="m">{{ m }}</option></select></label>
@@ -261,6 +278,16 @@ onBeforeRouteLeave(async () => {
         </div>
         <div v-else class="card p-6 text-center text-sm text-muted">เลือกส่วนในเรื่องราวเพื่อแก้ไข</div>
       </aside>
+
+      <!-- live preview, docked beside the story on wide screens -->
+      <div v-if="docked" class="min-w-0 xl:sticky xl:top-32 xl:h-[calc(100dvh-9rem)]">
+        <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" />
+      </div>
+    </div>
+
+    <!-- live preview as a side panel (narrower screens, and the other tabs) -->
+    <div v-if="live && !docked" class="fixed bottom-2 right-2 top-[7.5rem] z-40 w-[min(440px,calc(100vw-1rem))] shadow-2xl">
+      <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" />
     </div>
   </main>
 </template>

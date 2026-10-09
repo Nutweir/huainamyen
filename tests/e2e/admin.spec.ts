@@ -33,6 +33,13 @@ test("write a new trip: draft stays private until published, then readers see it
   const editor = page.locator(".ProseMirror");
   await editor.click();
   await editor.pressSequentially("ข้อความลับก่อนเผยแพร่");
+
+  // the live preview beside the editor shows it as readers will see it, outlined, before any save
+  const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]');
+  const shown = preview.locator("[data-block]").filter({ hasText: "ข้อความลับก่อนเผยแพร่" });
+  await expect(shown).toBeVisible();
+  await expect(shown).toHaveCSS("outline-style", "dashed");
+
   await expect(page.getByRole("status").filter({ hasText: "บันทึกแล้ว" })).toBeVisible({ timeout: 10_000 });
 
   // readers can't see the draft

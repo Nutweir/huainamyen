@@ -16,3 +16,4 @@ test-results/
 .claude/
 reading-site.html
 exports/
+.vite/
