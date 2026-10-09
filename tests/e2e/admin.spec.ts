@@ -79,3 +79,18 @@ test("rich text cannot inject markup", async ({ page }) => {
   await expect(page.getByText('<img src=x onerror="window.__xss=1">')).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined();
 });
+
+test("add a photo right where you are writing, and see it in the preview", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await page.locator('section[aria-label="เนื้อหาของวัน"] li button[aria-pressed]').filter({ hasText: "ถ้าดูจากเวลาแล้ว" }).click();
+  await page.getByRole("button", { name: /\+ รูปเล็กข้างข้อความ/ }).click();
+  const picker = page.locator("dialog[open]");
+  await picker.locator("ul button[aria-pressed]").first().click();
+  await picker.getByRole("button", { name: "ใช้ที่เลือก" }).click();
+  // the print sits beside that paragraph in the live preview, outlined as the current block
+  const beside = page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]').locator(".beside").filter({ hasText: "ถ้าดูจากเวลาแล้ว" });
+  await expect(beside).toBeVisible();
+  await expect(beside.locator("[data-block]").first()).toHaveCSS("outline-style", "dashed");
+});

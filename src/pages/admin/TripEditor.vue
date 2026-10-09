@@ -19,6 +19,7 @@ import TripSettingsForm from "@/components/editor/TripSettingsForm.vue";
 import NotesForm from "@/components/editor/NotesForm.vue";
 import VersionPanel from "@/components/editor/VersionPanel.vue";
 import LivePreview from "@/components/editor/LivePreview.vue";
+import QuickInsert, { type InsertMode } from "@/components/editor/QuickInsert.vue";
 
 const route = useRoute();
 const ed = useEditorStore();
@@ -110,6 +111,21 @@ function moveToDay(x: Block, to: number) {
 }
 function discard() { if (confirm("ทิ้งการแก้ในเครื่องนี้ และโหลดฉบับล่าสุดจากเซิร์ฟเวอร์?")) void ed.discardLocal(); }
 function onMedia(assets: MediaAsset[]) { assets.forEach(a => ed.useMedia(a)); }
+/** Place picked photos next to the selected block; the new block becomes the selection. */
+function quickInsert(mode: InsertMode, assets: MediaAsset[]) {
+  onMedia(assets);
+  // a clip's poster comes along for display, but isn't a photo of its own here
+  const picked = assets.filter(a => !assets.some(v => v.posterId === a.id));
+  if (!picked.length || !day.value) return;
+  const i = day.value.blocks.findIndex(x => x.id === ed.selected.blockId);
+  const after = i >= 0 ? i + 1 : day.value.blocks.length;
+  if (mode === "video") ed.addBlock(dayIndex.value, "video", after, { mediaId: picked[0].id });
+  else if (mode === "set") ed.addBlock(dayIndex.value, "images", after, { items: picked.map(a => ({ mediaId: a.id })) });
+  // beside: the print goes before the paragraph it sits next to
+  else if (mode === "beside") ed.addBlock(dayIndex.value, "image", i >= 0 ? i : after, { item: { mediaId: picked[0].id }, layout: "diary-photo", position: "right", besideCount: 1 });
+  else picked.forEach((a, n) => ed.addBlock(dayIndex.value, "image", after + n, { item: { mediaId: a.id } }));
+  toast(mode === "beside" ? "แปะรูปข้างย่อหน้าแล้ว — เปลี่ยนซ้าย/ขวาได้ที่ ตำแหน่ง" : "เพิ่มแล้ว — ลองเปลี่ยนรูปแบบดูในตัวอย่างสด");
+}
 
 // drag and drop (handle only, so text inside stays selectable)
 const dragFrom = ref<number | null>(null);
@@ -270,6 +286,7 @@ onBeforeRouteLeave(async () => {
       <aside ref="editorPanel" class="min-w-0 scroll-mt-28 lg:sticky lg:top-32 lg:max-h-[calc(100dvh-9rem)] lg:overflow-auto" aria-label="แก้ไขส่วนที่เลือก">
         <div v-if="block" class="card p-4">
           <BlockEditor :key="block.id" :block="block" :media="media" :trip-id="b.trip.id" @media="onMedia" />
+          <QuickInsert :trip-id="b.trip.id" @insert="quickInsert" />
           <label v-if="b.days.length > 1" class="field mt-4 border-t border-[#f0ebe1] pt-3"><span>ย้ายไปวันอื่น</span>
             <select class="input" :value="dayIndex" @change="moveToDay(block, Number(($event.target as HTMLSelectElement).value))">
               <option v-for="(d, i) in b.days" :key="d.id" :value="i">Day {{ pad2(d.dayNumber) }}</option>
