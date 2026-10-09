@@ -43,7 +43,7 @@ onBeforeUnmount(() => { removeEventListener("message", onMessage); removeEventLi
 
 const name = computed(() => site.value?.author || "Nutweir");
 // first paragraph reads as the lead; the rest as the letter
-const paragraphs = computed(() => (sanitizeNotes(site.value?.aboutHtml || "").match(/<p>[\s\S]*?<\/p>/g) || []));
+const paragraphs = computed(() => (sanitizeNotes(site.value?.aboutHtml || "").match(/<p[\s>][\s\S]*?<\/p>/g) || [])); // paragraphs may carry style classes
 const lead = computed(() => paragraphs.value[0] || "");
 const rest = computed(() => paragraphs.value.slice(1).join(""));
 const facts = computed(() => (site.value?.facts || []).filter(([k, v]) => k.trim() && v.trim()));

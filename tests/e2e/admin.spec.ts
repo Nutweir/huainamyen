@@ -249,6 +249,11 @@ test("write the About page: text, links and photo show in the preview and on the
   await page.getByRole("navigation", { name: "เมนูหลังบ้าน" }).getByRole("link", { name: "เกี่ยวกับผู้เขียน" }).click();
   await page.locator(".ProseMirror").first().click();
   await page.keyboard.type("สวัสดีครับ ผมชอบเดินทาง");
+  // this paragraph: centred, extra large, handwriting
+  const style = page.getByRole("group", { name: "รูปแบบย่อหน้าที่ 1" });
+  await style.getByRole("button", { name: "กึ่งกลาง" }).click();
+  await style.getByRole("button", { name: "ใหญ่พิเศษ" }).click();
+  await style.getByRole("button", { name: "ลายมือ" }).click();
   await page.getByRole("button", { name: "+ เพิ่มลิงก์" }).click();
   await page.getByPlaceholder("Instagram").fill("Instagram");
   await page.getByPlaceholder("https://… หรือ mailto:…").fill("https://instagram.com/example");
@@ -267,6 +272,9 @@ test("write the About page: text, links and photo show in the preview and on the
   await page.goto("about");
   await expect(page.locator(".about-story")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
   await expect(page.locator(".about-links a")).toHaveAttribute("href", "https://instagram.com/example");
+  const para = page.locator(".about-story p").first();
+  await expect(para).toHaveClass("al-center sz-xl f-hand");
+  await expect(para).toHaveCSS("text-align", "center");
 });
 
 test("start a trip from a shape: Thai title gets a link, days and moments are laid out, the card shows live", async ({ page }) => {

@@ -17,6 +17,10 @@ const NOTES = {
 
 const SAFE_URL = /^(https?:|mailto:|tel:|#|\/)/i;
 
+/** Classes that survive sanitizing: travel-note styles, and paragraph alignment / size / font (About page). */
+export const PARAGRAPH_STYLES = { align: ["al-center", "al-right"], size: ["sz-s", "sz-l", "sz-xl"], font: ["f-hand"] } as const;
+const KNOWN_CLASSES: string[] = ["tip", "tip-label", "note-link", ...PARAGRAPH_STYLES.align, ...PARAGRAPH_STYLES.size, ...PARAGRAPH_STYLES.font];
+
 type Purifier = ReturnType<typeof createDOMPurify>;
 let purifier: Purifier | null = null;
 
@@ -39,7 +43,7 @@ export function useWindow(win: WindowLike): void {
     }
     if (node.hasAttribute("class")) {
       // only the classes the notes stylesheet knows about
-      const keep = (node.getAttribute("class") || "").split(/\s+/).filter(c => ["tip", "tip-label", "note-link"].includes(c));
+      const keep = (node.getAttribute("class") || "").split(/\s+/).filter(c => KNOWN_CLASSES.includes(c));
       if (keep.length) node.setAttribute("class", keep.join(" ")); else node.removeAttribute("class");
     }
   });

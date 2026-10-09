@@ -23,6 +23,12 @@ describe("sanitizeNotes (travel notes)", () => {
   });
 });
 
+describe("paragraph styles (About page)", () => {
+  it("keeps alignment, size and handwriting classes, drops anything else", () => {
+    expect(sanitizeNotes('<p class="al-center sz-xl f-hand evil" style="color:red" onclick="x()">กลอน</p>')).toBe('<p class="al-center sz-xl f-hand">กลอน</p>');
+  });
+});
+
 describe("URL guards", () => {
   it("contacts accept web, phone and e-mail only", () => {
     expect(safeHref("tel:0803852146")).toBe("tel:0803852146");

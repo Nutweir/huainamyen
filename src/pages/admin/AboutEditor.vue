@@ -9,7 +9,7 @@ import type { MediaAsset, SiteSettings } from "@/types/content";
 import { useBackend } from "@/services";
 import { useToast } from "@/composables/useToast";
 import { clone } from "@/utils/format";
-import { safeHref, sanitizeInline } from "@/utils/sanitize";
+import { PARAGRAPH_STYLES, safeHref, sanitizeInline } from "@/utils/sanitize";
 import RichText from "@/components/editor/RichText.vue";
 import MediaPicker from "@/components/admin/MediaPicker.vue";
 
@@ -18,14 +18,29 @@ const router = useRouter();
 const { toast } = useToast();
 const site = ref<SiteSettings | null>(null);
 const saved = ref("");
-const paragraphs = ref<{ key: number; html: string }[]>([]);
+interface Para { key: number; html: string; align: "" | "al-center" | "al-right"; size: "" | "sz-s" | "sz-l" | "sz-xl"; font: "" | "f-hand" }
+const paragraphs = ref<Para[]>([]);
+const blank = (html = ""): Para => ({ key: keys++, html, align: "", size: "", font: "" });
 const saving = ref(false);
 const picker = ref<InstanceType<typeof MediaPicker> | null>(null);
 let keys = 0;
 
 /** "<p>a</p><p>b</p>" ⇄ ["a", "b"] (older single-block text becomes one paragraph). */
-const toParagraphs = (html: string) => (html.match(/<p>([\s\S]*?)<\/p>/g)?.map(p => p.slice(3, -4)) || (html.trim() ? [html] : [""])).map(h => ({ key: keys++, html: h }));
-const toHtml = () => paragraphs.value.map(p => sanitizeInline(p.html).trim()).filter(Boolean).map(h => `<p>${h}</p>`).join("");
+/** '<p class="al-center sz-l">a</p>…' ⇄ paragraphs with their style (older single-block text becomes one paragraph). */
+function toParagraphs(html: string): Para[] {
+  const found = [...html.matchAll(/<p(?:\s+class="([^"]*)")?>([\s\S]*?)<\/p>/g)];
+  if (!found.length) return [blank(html.trim())];
+  return found.map(([, cls = "", inner]) => {
+    const c = cls.split(/\s+/);
+    const pick = <T extends string>(list: readonly T[]) => (list.find(x => c.includes(x)) || "") as T | "";
+    return { ...blank(inner), align: pick(PARAGRAPH_STYLES.align), size: pick(PARAGRAPH_STYLES.size), font: pick(PARAGRAPH_STYLES.font) };
+  });
+}
+const toHtml = () => paragraphs.value
+  .map(p => ({ h: sanitizeInline(p.html).trim(), cls: [p.align, p.size, p.font].filter(Boolean).join(" ") }))
+  .filter(p => p.h)
+  .map(p => (p.cls ? `<p class="${p.cls}">${p.h}</p>` : `<p>${p.h}</p>`))
+  .join("");
 const draft = computed<SiteSettings | null>(() => (site.value ? { ...site.value, aboutHtml: toHtml(), links: (site.value.links || []).filter(l => l.label.trim() || l.url.trim()) } : null));
 const dirty = computed(() => !!draft.value && JSON.stringify(draft.value) !== saved.value);
 
@@ -55,6 +70,9 @@ const factsText = computed({
   get: () => (site.value?.facts || []).map(([k, v]) => `${k}: ${v}`).join(String.fromCharCode(10)),
   set: (v: string) => { if (site.value) site.value.facts = v.split(/\r?\n/).map(l => l.split(/:\s*/)).filter(p => p[0]?.trim()).map(([k, ...r]) => [k.trim(), r.join(": ").trim()] as [string, string]); },
 });
+const ALIGNS = [["", "ชิดซ้าย"], ["al-center", "กึ่งกลาง"], ["al-right", "ชิดขวา"]] as const;
+const SIZES = [["sz-s", "เล็ก"], ["", "ปกติ"], ["sz-l", "ใหญ่"], ["sz-xl", "ใหญ่พิเศษ"]] as const;
+const FONTS = [["", "ปกติ"], ["f-hand", "ลายมือ"]] as const;
 const move = (i: number, d: number) => { const p = paragraphs.value, j = i + d; if (j >= 0 && j < p.length) [p[i], p[j]] = [p[j], p[i]]; };
 
 // live preview: the real About page in a frame, fed the draft
@@ -111,8 +129,17 @@ onBeforeRouteLeave(() => !dirty.value || confirm("ยังไม่ได้บ
               <button type="button" class="rounded px-1.5 text-danger hover:bg-[#fbeee9]" :disabled="paragraphs.length < 2" :aria-label="`ลบย่อหน้าที่ ${i + 1}`" @click="paragraphs.splice(i, 1)">✕</button>
             </div>
             <RichText v-model="p.html" :placeholder="i === 0 ? 'แนะนำตัวสั้น ๆ — เป็นใคร ทำไมถึงเขียนบันทึกนี้…' : 'เขียนต่อ…'" />
+            <!-- how this paragraph sits on the page -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs" role="group" :aria-label="`รูปแบบย่อหน้าที่ ${i + 1}`">
+              <span class="text-muted">ตำแหน่ง</span>
+              <button v-for="[v, l] in ALIGNS" :key="l" type="button" class="chip border border-rule" :class="p.align === v ? 'bg-ink text-white' : 'bg-white'" :aria-pressed="p.align === v" @click="p.align = v">{{ l }}</button>
+              <span class="ml-2 text-muted">ขนาด</span>
+              <button v-for="[v, l] in SIZES" :key="l" type="button" class="chip border border-rule" :class="p.size === v ? 'bg-ink text-white' : 'bg-white'" :aria-pressed="p.size === v" @click="p.size = v">{{ l }}</button>
+              <span class="ml-2 text-muted">ตัวอักษร</span>
+              <button v-for="[v, l] in FONTS" :key="l" type="button" class="chip border border-rule" :class="p.font === v ? 'bg-ink text-white' : 'bg-white'" :aria-pressed="p.font === v" @click="p.font = v">{{ l }}</button>
+            </div>
           </div>
-          <button type="button" class="btn btn-ghost w-fit" @click="paragraphs.push({ key: keys++, html: '' })">+ เพิ่มย่อหน้า</button>
+          <button type="button" class="btn btn-ghost w-fit" @click="paragraphs.push(blank())">+ เพิ่มย่อหน้า</button>
         </section>
 
         <section class="card grid gap-3 p-4" aria-labelledby="ab-links">

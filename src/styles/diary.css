@@ -549,3 +549,11 @@ body.diary .about-latest { padding: 3rem 0 4rem; border-top: 1px solid var(--rul
 body.diary .about-latest-t { margin: 0; }
 body.diary .about-latest .shelf { padding-top: 1.5rem; padding-bottom: 1.5rem; }
 body.diary .about-latest .shelf-year { display: none; }
+
+/* About: per-paragraph alignment, size and handwriting (chosen in the admin) */
+body.diary .about-story p.al-center { text-align: center; }
+body.diary .about-story p.al-right { text-align: right; }
+body.diary .about-story p.sz-s { font-size: .95rem; line-height: 1.8; }
+body.diary .about-story p.sz-l { font-size: clamp(1.25rem, 3.8vw, 1.55rem); line-height: 1.75; font-family: var(--f-display); }
+body.diary .about-story p.sz-xl { font-size: clamp(1.6rem, 5.2vw, 2.2rem); line-height: 1.6; font-family: var(--f-display); }
+body.diary .about-story p.f-hand { font-family: var(--f-hand); color: var(--hand); }
