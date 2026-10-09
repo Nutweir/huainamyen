@@ -209,8 +209,13 @@ export interface TripSummary {
 export interface SiteSettings {
   title: string;
   tagline: string;
+  /** About page text: <p> paragraphs of the inline subset. */
   aboutHtml: string;
   author: string;
+  /** About page photo — a copy of the asset, since readers can't read the media table. */
+  photo?: MediaAsset | null;
+  /** Links on the About page (Instagram, e-mail…). */
+  links?: { label: string; url: string }[];
 }
 
 export const isPlaceholder = (x: SetItem): x is Placeholder => "placeholder" in x;

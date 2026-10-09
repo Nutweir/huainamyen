@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
       { path: "trips", name: "trips", component: () => import("@/pages/admin/TripList.vue") },
       { path: "trips/:id", name: "trip-editor", component: () => import("@/pages/admin/TripEditor.vue") },
       { path: "media", name: "media", component: () => import("@/pages/admin/MediaLibrary.vue") },
+      { path: "about", name: "about-editor", component: () => import("@/pages/admin/AboutEditor.vue") },
       { path: "settings", name: "settings", component: () => import("@/pages/admin/SiteSettings.vue") },
     ],
   },
@@ -66,7 +67,7 @@ router.beforeEach(async to => {
 // Admin screens name the tab themselves (public pages set title + description via usePageMeta)
 const ADMIN_TITLES: Record<string, string> = {
   login: "เข้าสู่ระบบ", dashboard: "ภาพรวม", trips: "ทริป", "trip-editor": "แก้ไขทริป",
-  media: "คลังรูปและวิดีโอ", settings: "ตั้งค่า", preview: "ตัวอย่าง",
+  media: "คลังรูปและวิดีโอ", settings: "ตั้งค่า", preview: "ตัวอย่าง", "about-editor": "เกี่ยวกับผู้เขียน",
 };
 router.afterEach(to => {
   const name = String(to.name || "");

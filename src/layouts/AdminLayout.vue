@@ -16,6 +16,7 @@ const nav = [
   { to: "/admin", label: "ภาพรวม", exact: true },
   { to: "/admin/trips", label: "ทริป" },
   { to: "/admin/media", label: "คลังรูปและวิดีโอ" },
+  { to: "/admin/about", label: "เกี่ยวกับผู้เขียน" },
   { to: "/admin/settings", label: "ตั้งค่าและสำรองข้อมูล" },
 ];
 async function signOut() { await auth.signOut(); await router.replace("/admin/login"); }

@@ -237,3 +237,28 @@ test("clicking the cover photo, title or a travel note in the preview takes you 
   await expect(page.getByRole("tab", { name: "ข้อมูลการเดินทาง" })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator('details[data-field^="notes:"][open]').first()).toBeInViewport();
 });
+
+test("write the About page: text, links and photo show in the preview and on the site", async ({ page }) => {
+  await signIn(page);
+  await page.getByRole("navigation", { name: "เมนูหลังบ้าน" }).getByRole("link", { name: "เกี่ยวกับผู้เขียน" }).click();
+  await page.locator(".ProseMirror").first().click();
+  await page.keyboard.type("สวัสดีครับ ผมชอบเดินทาง");
+  await page.getByRole("button", { name: "+ เพิ่มลิงก์" }).click();
+  await page.getByPlaceholder("Instagram").fill("Instagram");
+  await page.getByPlaceholder("https://… หรือ mailto:…").fill("https://instagram.com/example");
+  await page.getByRole("button", { name: "เลือกรูป" }).click();
+  const picker = page.locator("dialog[open]");
+  await picker.locator("ul button[aria-pressed]").first().click();
+  await picker.getByRole("button", { name: "ใช้ที่เลือก" }).click();
+
+  const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าเกี่ยวกับผู้เขียน"]');
+  await expect(preview.locator(".about-text")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
+  await expect(preview.locator(".about-links a")).toHaveText("Instagram ↗");
+  await expect(preview.locator(".about-photo img")).toBeVisible();
+
+  await page.getByRole("button", { name: "บันทึก (ขึ้นเว็บทันที)" }).click();
+  await expect(page.locator("main [role=status]")).toHaveText("บันทึกแล้ว");
+  await page.goto("about");
+  await expect(page.locator(".about-text")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
+  await expect(page.locator(".about-links a")).toHaveAttribute("href", "https://instagram.com/example");
+});

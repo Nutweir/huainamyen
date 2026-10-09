@@ -6,7 +6,6 @@ import type { SiteSettings } from "@/types/content";
 import { useBackend } from "@/services";
 import { exportBundle, parseImport } from "@/services/snapshot";
 import { useToast } from "@/composables/useToast";
-import RichText from "@/components/editor/RichText.vue";
 
 const { repo, configured } = useBackend();
 const router = useRouter();
@@ -74,8 +73,7 @@ async function importFile(e: Event) {
       <h2 class="font-display text-lg">เว็บไซต์</h2>
       <label class="field"><span>ชื่อเว็บไซต์</span><input v-model="site.title" class="input"></label>
       <label class="field"><span>คำโปรย</span><input v-model="site.tagline" class="input"></label>
-      <label class="field"><span>ชื่อผู้เขียน</span><input v-model="site.author" class="input"></label>
-      <div class="field"><span>หน้าเกี่ยวกับ (About)</span><RichText v-model="site.aboutHtml" placeholder="เกี่ยวกับบันทึกนี้…" /></div>
+      <p class="text-sm">หน้าเกี่ยวกับผู้เขียน (รูป เรื่องเล่า ลิงก์) แก้ที่เมนู <RouterLink to="/admin/about" class="underline">เกี่ยวกับผู้เขียน →</RouterLink></p>
       <button class="btn w-fit">บันทึก</button>
     </form>
 

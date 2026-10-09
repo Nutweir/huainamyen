@@ -510,3 +510,14 @@ figcaption .hand { font-size: 1.1rem; }
 .diary .note-body ul { list-style: disc; }
 .diary button { font: inherit; }
 .diary .slot-preview-note { font-size: .82rem; color: var(--muted); text-align: center; }
+
+/* About page: the author's photo and links */
+body.diary .about-photo { margin: 0 0 1.5rem; max-width: min(20rem, 82%); padding: .7rem .7rem 1rem; background: #fffdf8; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 10px 26px -14px rgb(60 40 20 / .35); transform: rotate(-1.2deg); }
+body.diary .about-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+body.diary .about-links { list-style: none; padding: 0; margin: 1.5rem 0 0; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+body.diary .about-links a { color: var(--ink); text-decoration: underline; text-underline-offset: .2em; }
+@media (min-width: 760px) {
+  body.diary .about-photo { float: right; width: 16rem; margin: .25rem 0 1.25rem 2.25rem; transform: rotate(1.4deg); }
+}
+body.diary .about-main::after { content: ""; display: block; clear: both; }
+body.diary .about-text p + p { margin-top: 1em; }
