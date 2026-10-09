@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* All trips: search, filter by status/tag, sort, create, duplicate, change status, delete. */
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import type { TripStatus, TripSummary } from "@/types/content";
 import { useBackend } from "@/services";
@@ -26,6 +26,10 @@ async function load() {
   finally { loading.value = false; }
 }
 onMounted(load);
+// a card's ⋯ menu closes when you click anywhere else
+const closeMenus = (e: MouseEvent) => document.querySelectorAll<HTMLDetailsElement>("main details[open]").forEach(d => { if (!d.contains(e.target as Node)) d.open = false; });
+onMounted(() => document.addEventListener("click", closeMenus));
+onBeforeUnmount(() => document.removeEventListener("click", closeMenus));
 
 const tags = computed(() => [...new Set(trips.value.flatMap(t => t.tags))].sort());
 const shown = computed(() => {
@@ -73,27 +77,44 @@ async function remove(t: TripSummary) {
       </select>
     </div>
     <p v-if="loading" class="mt-4 text-muted">กำลังโหลด…</p>
-    <ul v-else class="mt-4 grid gap-3">
-      <li v-for="t in shown" :key="t.id" class="card flex flex-wrap items-center gap-3 p-3">
-        <img v-if="t.cover" :src="repo.mediaUrl(t.cover, 500)" alt="" class="h-16 w-24 rounded-md object-cover">
-        <div v-else class="h-16 w-24 rounded-md bg-[#efe9dd]" />
-        <RouterLink :to="`/admin/trips/${t.id}`" class="min-w-[12rem] flex-1">
-          <span class="block font-medium">{{ t.title || "(ไม่มีชื่อ)" }}</span>
-          <span class="block text-sm text-muted">{{ t.location }} · {{ dateRange(t.startDate, t.endDate) }}</span>
-          <span class="block text-xs text-muted">/journeys/{{ t.slug }} · แก้ไข {{ new Date(t.updatedAt).toLocaleString("th-TH") }}</span>
-        </RouterLink>
-        <StatusChip :status="t.status" />
-        <div class="flex flex-wrap gap-1.5">
-          <RouterLink :to="`/admin/trips/${t.id}`" class="btn btn-ghost min-h-8 px-3">แก้ไข</RouterLink>
-          <a v-if="t.status === 'published'" :href="router.resolve(`/journeys/${t.slug}`).href" target="_blank" rel="noopener" class="btn btn-ghost min-h-8 px-3">ดู</a>
-          <button class="btn btn-ghost min-h-8 px-3" @click="duplicate(t)">ทำสำเนา</button>
-          <button v-if="t.status === 'published'" class="btn btn-ghost min-h-8 px-3" @click="setStatus(t, 'draft')">ยกเลิกเผยแพร่</button>
-          <button v-if="t.status !== 'archived'" class="btn btn-ghost min-h-8 px-3" @click="setStatus(t, 'archived')">เก็บเข้าคลัง</button>
-          <button v-else class="btn btn-ghost min-h-8 px-3" @click="setStatus(t, 'draft')">นำกลับมาเป็นร่าง</button>
-          <button class="btn btn-danger min-h-8 px-3" @click="remove(t)">ลบ</button>
-        </div>
+    <!-- like a design gallery: a blank card to start, then every trip as its cover -->
+    <ul v-else class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <li>
+        <button type="button" class="group grid aspect-[4/5] w-full place-items-center rounded-xl border-2 border-dashed border-[#d6cdbb] bg-white/60 text-muted transition hover:border-forest hover:bg-white hover:text-forest" @click="dlg?.open()">
+          <span class="grid justify-items-center gap-2">
+            <span class="grid size-12 place-items-center rounded-full bg-[#eee8dc] text-2xl transition group-hover:bg-forest group-hover:text-white" aria-hidden="true">+</span>
+            <span class="font-medium">เริ่มทริปใหม่</span>
+            <span class="text-xs">เปล่า · 1 วัน · 2 วัน · 3 วัน</span>
+          </span>
+        </button>
       </li>
-      <li v-if="!shown.length" class="py-6 text-center text-muted">ไม่พบทริปที่ตรงกับการค้นหา</li>
+      <li v-for="t in shown" :key="t.id" class="group relative">
+        <RouterLink :to="`/admin/trips/${t.id}`" class="block overflow-hidden rounded-xl border border-[#ece6da] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+          <span class="relative block aspect-[4/5] bg-[#efe9dd]">
+            <img v-if="t.cover" :src="repo.mediaUrl(t.cover, 500)" alt="" class="size-full object-cover" :style="t.cover.focus ? { objectPosition: t.cover.focus } : undefined" loading="lazy">
+            <span v-else class="grid size-full place-items-center text-xs text-muted">ยังไม่มีรูปปก</span>
+            <StatusChip :status="t.status" class="absolute left-2 top-2 shadow-sm" />
+          </span>
+          <span class="block p-3">
+            <span class="block truncate font-medium">{{ t.title || "(ไม่มีชื่อ)" }}</span>
+            <span class="block truncate text-xs text-muted">{{ dateRange(t.startDate, t.endDate, true) }}{{ t.location ? ` · ${t.location}` : "" }}</span>
+            <span class="block text-[11px] text-muted">แก้ไข {{ new Date(t.updatedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" }) }}</span>
+          </span>
+        </RouterLink>
+        <details class="absolute right-2 top-2 z-10" @click.stop>
+          <summary class="grid size-8 cursor-pointer list-none place-items-center rounded-full bg-white/90 text-lg leading-none shadow-sm [&::-webkit-details-marker]:hidden" :aria-label="`จัดการทริป ${t.title}`">⋯</summary>
+          <div class="absolute right-0 mt-1 grid w-44 gap-0.5 rounded-lg border border-[#ece6da] bg-white p-1 text-sm shadow-lg">
+            <RouterLink :to="`/admin/trips/${t.id}`" class="rounded px-3 py-1.5 hover:bg-[#f4f1ea]">แก้ไข</RouterLink>
+            <a v-if="t.status === 'published'" :href="router.resolve(`/journeys/${t.slug}`).href" target="_blank" rel="noopener" class="rounded px-3 py-1.5 hover:bg-[#f4f1ea]">ดูหน้าจริง ↗</a>
+            <button class="rounded px-3 py-1.5 text-left hover:bg-[#f4f1ea]" @click="duplicate(t)">ทำสำเนา</button>
+            <button v-if="t.status === 'published'" class="rounded px-3 py-1.5 text-left hover:bg-[#f4f1ea]" @click="setStatus(t, 'draft')">ยกเลิกเผยแพร่</button>
+            <button v-if="t.status !== 'archived'" class="rounded px-3 py-1.5 text-left hover:bg-[#f4f1ea]" @click="setStatus(t, 'archived')">เก็บเข้าคลัง</button>
+            <button v-else class="rounded px-3 py-1.5 text-left hover:bg-[#f4f1ea]" @click="setStatus(t, 'draft')">นำกลับมาเป็นร่าง</button>
+            <button class="rounded px-3 py-1.5 text-left text-danger hover:bg-[#fbeee9]" @click="remove(t)">ลบ…</button>
+          </div>
+        </details>
+      </li>
+      <li v-if="!shown.length && (q || status || tag)" class="col-span-full py-6 text-center text-muted">ไม่พบทริปที่ตรงกับการค้นหา</li>
     </ul>
     <NewTripDialog ref="dlg" @created="id => router.push(`/admin/trips/${id}`)" />
   </main>

@@ -10,6 +10,12 @@ async function signIn(page: Page) {
   await expect(page.getByRole("heading", { name: "ภาพรวม" })).toBeVisible();
 }
 
+/** Trips are cards; the card itself opens the editor. */
+async function openTrip(page: Page, title: string) {
+  await page.locator("main ul > li.group").filter({ hasText: title }).getByRole("link").first().click();
+  await expect(page).toHaveURL(/admin\/trips\/[0-9a-f-]+/);
+}
+
 test("admin pages need a sign-in", async ({ page }) => {
   await page.goto("admin/trips");
   await expect(page).toHaveURL(/admin\/login\?next=/);
@@ -24,7 +30,7 @@ test("write a new trip: draft stays private until published, then readers see it
   await page.getByLabel("ชื่อทริป").fill("ทดสอบ E2E");
   await page.getByLabel("ลิงก์ (slug)").fill("e2e-trip");
   await page.getByLabel("วันไป").fill("2027-02-01");
-  await page.getByRole("button", { name: "สร้างเป็นฉบับร่าง" }).click();
+  await page.getByRole("button", { name: "สร้างแล้วเริ่มเขียน" }).click();
   await expect(page).toHaveURL(/admin\/trips\/[0-9a-f-]+$/);
 
   // write a paragraph; autosave
@@ -72,7 +78,7 @@ test("rich text cannot inject markup", async ({ page }) => {
   page.on("dialog", d => d.accept());
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   await page.getByRole("button", { name: /\+ เพิ่มเนื้อหา/ }).click();
   await page.getByRole("button", { name: "ย่อหน้า", exact: true }).click();
   const editor = page.locator(".ProseMirror");
@@ -87,7 +93,7 @@ test("rich text cannot inject markup", async ({ page }) => {
 test("add a photo right where you are writing, and see it in the preview", async ({ page }) => {
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   await page.locator('section[aria-label="เนื้อหาของวัน"] li button[aria-pressed]').filter({ hasText: "ถ้าดูจากเวลาแล้ว" }).click();
   await page.getByRole("button", { name: /\+ รูปเล็กข้างข้อความ/ }).click();
   const picker = page.locator("dialog[open]");
@@ -102,7 +108,7 @@ test("add a photo right where you are writing, and see it in the preview", async
 test("drag blocks with the mouse to reorder them, or onto another day", async ({ page }) => {
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   const rows = page.locator("[data-row]");
   await expect(rows.nth(3)).toContainText("ถ้าดูจากเวลาแล้ว");
   const from = (await rows.nth(3).boundingBox())!, to = (await rows.nth(1).boundingBox())!;
@@ -130,7 +136,7 @@ test("click in the live preview to edit that spot; undo with Ctrl+Z", async ({ p
   page.on("dialog", d => d.accept());
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]');
   await preview.locator("[data-block]").filter({ hasText: "ระหว่างทางบรรยากาศดี" }).first().click();
   await expect(page.locator('[data-row] button[aria-pressed="true"]')).toContainText("ระหว่างทางบรรยากาศดี");
@@ -151,7 +157,7 @@ test("click in the live preview to edit that spot; undo with Ctrl+Z", async ({ p
 test("publishing is held back while something is broken, and the list takes you there", async ({ page }) => {
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   await page.getByRole("button", { name: /\+ เพิ่มเนื้อหา/ }).click();
   await page.getByRole("button", { name: "รูป", exact: true }).click();
   await page.getByRole("button", { name: "เผยแพร่ฉบับนี้" }).click();
@@ -166,7 +172,7 @@ test("publishing is held back while something is broken, and the list takes you 
 test("drop a photo file from the computer between two paragraphs", async ({ page }) => {
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   const rows = page.locator("[data-row]");
   await expect(rows.nth(3)).toBeVisible();
   const [above, below] = [await rows.nth(2).innerText(), await rows.nth(3).innerText()];
@@ -188,7 +194,7 @@ test("drop a photo file from the computer between two paragraphs", async ({ page
 test("trip details tab: the preview sits beside the form and shows the share card", async ({ page }) => {
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   await page.getByRole("tab", { name: /ข้อมูลทริป/ }).click();
   const frame = page.locator('iframe[title="ตัวอย่างหน้าบันทึก"]');
   await expect(frame).toBeVisible();
@@ -202,7 +208,7 @@ test("see what changed since publishing, and the library says where a photo is u
   page.on("dialog", d => d.accept());
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   await page.locator("[data-row]").nth(2).getByRole("button", { name: /^ลบ/ }).click();
   await page.getByRole("button", { name: "เทียบกับที่เผยแพร่" }).click();
   await expect(page.locator("dialog[open]")).toContainText("ลบย่อหน้า");
@@ -221,7 +227,7 @@ test("see what changed since publishing, and the library says where a photo is u
 test("clicking the cover photo, title or a travel note in the preview takes you to that field", async ({ page }) => {
   await signIn(page);
   await page.goto("admin/trips");
-  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await openTrip(page, "Huai Nam Yen");
   await page.getByRole("tab", { name: /ข้อมูลทริป/ }).click();
   const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]');
 
@@ -261,4 +267,22 @@ test("write the About page: text, links and photo show in the preview and on the
   await page.goto("about");
   await expect(page.locator(".about-story")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
   await expect(page.locator(".about-links a")).toHaveAttribute("href", "https://instagram.com/example");
+});
+
+test("start a trip from a shape: Thai title gets a link, days and moments are laid out, the card shows live", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("button", { name: /เริ่มทริปใหม่/ }).first().click();
+  const dlg = page.locator("dialog[open]");
+  await dlg.locator("label").filter({ hasText: "2 วัน 1 คืน" }).click();
+  await dlg.getByLabel("ชื่อทริป").fill("ดอยหลวงเชียงดาว");
+  await dlg.getByLabel("วันไป").fill("2027-02-27");
+  await expect(dlg.getByLabel("ลิงก์ (slug)")).toHaveValue("trip-2027-02-27");
+  await expect(dlg.getByLabel(/วันกลับ/)).toHaveValue("2027-02-28");
+  await expect(dlg.getByLabel("ตัวอย่างการ์ดทริป")).toContainText("ดอยหลวงเชียงดาว");
+  await dlg.getByRole("button", { name: "สร้างแล้วเริ่มเขียน" }).click();
+  await expect(page.locator('[data-day-drop="1"]')).toContainText("2027-02-28");
+  await expect(page.locator("[data-row]")).toHaveCount(4);
+  await page.goto("admin/trips");
+  await expect(page.locator("main ul > li.group").filter({ hasText: "ดอยหลวงเชียงดาว" })).toContainText("ฉบับร่าง");
 });
