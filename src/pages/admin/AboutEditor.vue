@@ -32,7 +32,7 @@ const dirty = computed(() => !!draft.value && JSON.stringify(draft.value) !== sa
 onMounted(async () => {
   try {
     const s = await repo.getSite();
-    site.value = { ...clone(s), links: s.links?.length ? clone(s.links) : [], photo: s.photo || null };
+    site.value = { ...clone(s), links: s.links?.length ? clone(s.links) : [], photo: s.photo || null, note: s.note || "", facts: s.facts ? clone(s.facts) : [], photoCaption: s.photoCaption || "" };
     paragraphs.value = toParagraphs(s.aboutHtml || "");
     saved.value = JSON.stringify(draft.value);
   } catch (e) { toast((e as Error).message, true); }
@@ -51,6 +51,10 @@ function picked(assets: MediaAsset[]) {
   const a = assets.find(x => x.kind === "image");
   if (a && site.value) site.value.photo = { ...a, originalPath: null };
 }
+const factsText = computed({
+  get: () => (site.value?.facts || []).map(([k, v]) => `${k}: ${v}`).join(String.fromCharCode(10)),
+  set: (v: string) => { if (site.value) site.value.facts = v.split(/\r?\n/).map(l => l.split(/:\s*/)).filter(p => p[0]?.trim()).map(([k, ...r]) => [k.trim(), r.join(": ").trim()] as [string, string]); },
+});
 const move = (i: number, d: number) => { const p = paragraphs.value, j = i + d; if (j >= 0 && j < p.length) [p[i], p[j]] = [p[j], p[i]]; };
 
 // live preview: the real About page in a frame, fed the draft
@@ -83,6 +87,8 @@ onBeforeRouteLeave(() => !dirty.value || confirm("ยังไม่ได้บ
         <section class="card grid gap-3 p-4" aria-labelledby="ab-who">
           <h2 id="ab-who" class="font-display text-lg">ผู้เขียน</h2>
           <label class="field"><span>ชื่อที่แสดง</span><input v-model="site.author" class="input" maxlength="80"></label>
+          <label class="field"><span>ประโยคลายมือใต้ชื่อ (ไม่ใส่ก็ได้)</span><input v-model="site.note" class="input" maxlength="140" placeholder="เช่น ชอบเดินทางช้า ๆ และจดทุกอย่างไว้"></label>
+          <label class="field"><span>ข้อมูลสั้น ๆ (หัวข้อ: ค่า หนึ่งรายการต่อแถว)</span><textarea v-model.lazy="factsText" class="input" rows="3" placeholder="Based in: เชียงใหม่&#10;Camera: …" /></label>
           <div class="flex items-center gap-3">
             <img v-if="site.photo" :src="repo.mediaUrl(site.photo, 500)" :alt="site.photo.alt" class="h-24 w-20 rounded object-cover" :style="site.photo.focus ? { objectPosition: site.photo.focus } : undefined">
             <div v-else class="grid h-24 w-20 place-items-center rounded bg-[#efe9dd] text-center text-xs text-muted">ไม่มีรูป</div>
@@ -91,6 +97,7 @@ onBeforeRouteLeave(() => !dirty.value || confirm("ยังไม่ได้บ
               <button v-if="site.photo" type="button" class="btn btn-ghost" @click="site.photo = null">เอารูปออก</button>
             </div>
           </div>
+          <label v-if="site.photo" class="field"><span>คำลายมือใต้รูป (ว่าง = ใช้ชื่อ)</span><input v-model="site.photoCaption" class="input" maxlength="60"></label>
           <p class="text-xs text-muted">แนะนำรูปแนวตั้ง 4:5 · ตั้งจุดสำคัญของรูป (หน้า) ได้ที่คลังรูป</p>
         </section>
 

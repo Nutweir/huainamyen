@@ -216,6 +216,12 @@ export interface SiteSettings {
   photo?: MediaAsset | null;
   /** Links on the About page (Instagram, e-mail…). */
   links?: { label: string; url: string }[];
+  /** A short handwritten line under the name. */
+  note?: string;
+  /** Small facts beside it, e.g. ["Based in", "เชียงใหม่"]. */
+  facts?: [string, string][];
+  /** Handwritten caption under the photo. */
+  photoCaption?: string;
 }
 
 export const isPlaceholder = (x: SetItem): x is Placeholder => "placeholder" in x;

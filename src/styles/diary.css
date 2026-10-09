@@ -511,13 +511,40 @@ figcaption .hand { font-size: 1.1rem; }
 .diary button { font: inherit; }
 .diary .slot-preview-note { font-size: .82rem; color: var(--muted); text-align: center; }
 
-/* About page: the author's photo and links */
-body.diary .about-photo { margin: 0 0 1.5rem; max-width: min(20rem, 82%); padding: .7rem .7rem 1rem; background: #fffdf8; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 10px 26px -14px rgb(60 40 20 / .35); transform: rotate(-1.2deg); }
+/* About page: a page of the journal about its author */
+body.diary .about-head { max-width: 1080px; margin: 0 auto; padding: clamp(4.5rem, 12vw, 7.5rem) var(--gutter) clamp(2.5rem, 6vw, 4rem); display: grid; gap: 2.5rem; align-items: center; }
+body.diary .about-name { font-family: var(--f-latin); font-weight: 500; font-size: clamp(3rem, 12vw, 6rem); line-height: .95; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 1rem; }
+body.diary .about-note { font-size: clamp(1.15rem, 3.4vw, 1.45rem); margin: 0 0 1.75rem; transform: rotate(-1deg); transform-origin: left; }
+body.diary .about-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .9rem 1.5rem; margin: 0; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+body.diary .about-facts dt { font-family: var(--f-latin); font-size: .74rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+body.diary .about-facts dd { margin: .1rem 0 0; font-size: .98rem; line-height: 1.5; }
+body.diary .about-photo { position: relative; justify-self: center; width: min(78%, 21rem); margin: .5rem 0 0; padding: .7rem .7rem 0; background: var(--polaroid); box-shadow: 0 1px 2px rgb(0 0 0 / .1), 0 14px 32px -16px rgb(60 40 20 / .45); transform: rotate(2deg); }
+body.diary .about-photo::before { content: ""; position: absolute; z-index: 1; top: -12px; left: 50%; width: 42%; height: 24px; translate: -50% 0; rotate: -3deg; background: rgb(233 222 196 / .8); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
 body.diary .about-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
-body.diary .about-links { list-style: none; padding: 0; margin: 1.5rem 0 0; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
-body.diary .about-links a { color: var(--ink); text-decoration: underline; text-underline-offset: .2em; }
-@media (min-width: 760px) {
-  body.diary .about-photo { float: right; width: 16rem; margin: .25rem 0 1.25rem 2.25rem; transform: rotate(1.4deg); }
+body.diary .about-photo figcaption { text-align: center; padding: .6rem 0 .9rem; color: #5a4630; font-size: 1.05rem; }
+@media (min-width: 820px) {
+  body.diary .about-head { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 4rem; }
+  body.diary .about-photo { justify-self: end; }
 }
-body.diary .about-main::after { content: ""; display: block; clear: both; }
-body.diary .about-text p + p { margin-top: 1em; }
+
+body.diary .about-story { padding-bottom: clamp(3rem, 8vw, 5rem); }
+body.diary .about-lead p { font-family: var(--f-display); font-size: clamp(1.25rem, 3.8vw, 1.6rem); line-height: 1.75; margin: 0 0 1.5rem; }
+body.diary .about-text p { margin: 0 0 1.1rem; }
+body.diary .about-sign { font-size: 1.35rem; justify-self: end; margin: .5rem 0 0; transform: rotate(-3deg); }
+
+body.diary .about-stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; margin: 3rem 0 1rem; }
+body.diary .about-stamps .stamp { justify-self: auto; margin: .5rem; }
+
+body.diary .about-links { display: flex; flex-wrap: wrap; gap: .75rem; margin: 2rem 0 0; }
+body.diary .about-ticket { position: relative; display: inline-flex; align-items: center; gap: .55rem; min-height: 46px; padding: .5rem 1.15rem .5rem .95rem; color: var(--ink); text-decoration: none; background: var(--polaroid); border: 1px dashed var(--rule); border-radius: 8px; box-shadow: 0 1px 2px rgb(0 0 0 / .06); transition: transform .3s var(--ease), border-color .3s; }
+body.diary .about-ticket:hover { transform: translateY(-2px) rotate(-1deg); border-color: var(--accent); }
+body.diary .about-ticket::before, body.diary .about-ticket::after { content: ""; position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--page); border: 1px dashed var(--rule); }
+body.diary .about-ticket::before { left: -6px; clip-path: inset(0 0 0 50%); }
+body.diary .about-ticket::after { right: -6px; clip-path: inset(0 50% 0 0); }
+body.diary .about-icon { width: 20px; height: 20px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+body.diary .about-icon .dot { fill: var(--accent); stroke: none; }
+body.diary .about-arrow { color: var(--muted); font-size: .85em; }
+
+body.diary .about-latest { padding: 3rem 0 4rem; border-top: 1px solid var(--rule); }
+body.diary .about-latest-t { margin: 0; }
+body.diary .about-latest .shelf { padding-top: 1.5rem; padding-bottom: 1.5rem; }
