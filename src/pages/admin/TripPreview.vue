@@ -23,7 +23,8 @@ const slots = ref(true);
 const stamp = ref(0);
 const focusCss = ref("");
 let lastFocus = "";
-const PICK_CSS = ".preview-pick [data-block], .preview-pick section.event > header { cursor: pointer; } .preview-pick [data-block]:hover, .preview-pick section.event > header:hover { outline: 1px dashed rgb(63 94 69 / .55); outline-offset: 6px; border-radius: 2px; }";
+const PICKABLE = "[data-block], section.event > header, .cover-text > *, .cover-photo, .cover-meta, #ending, #roll, #notes .note-sec, #notes > header";
+const PICK_CSS = `${PICKABLE.split(", ").map(s => `.preview-pick ${s}`).join(", ")} { cursor: pointer; } ${PICKABLE.split(", ").map(s => `.preview-pick ${s}:hover`).join(", ")} { outline: 1px dashed rgb(63 94 69 / .55); outline-offset: 6px; border-radius: 2px; }`;
 
 async function load() {
   try {
@@ -72,6 +73,19 @@ function onMessage(e: MessageEvent) {
   void show(m.focus || "");
 }
 
+/** Which form field shows this part of the page (cover, closing pages, film roll, travel notes). */
+function fieldAt(t: HTMLElement): string | null {
+  const parts: [string, string][] = [
+    [".cover-title, .kicker", "title"], [".cover-place", "location"], [".cover-date", "dates"], [".cover-epigraph", "epigraph"],
+    [".cover-meta", "coverMeta"], [".cover-photo", "cover"], [".cover", "title"], ["#ending", "ending"], ["#roll", "roll"],
+  ];
+  for (const [sel, field] of parts) if (t.closest(sel)) return field;
+  const sec = t.closest<HTMLElement>("#notes section[id]");
+  if (sec) return `notes:${sec.id}`;
+  if (t.closest("#notes")) return "notes-intro";
+  return null;
+}
+
 /** In the editor's preview a click picks that block for editing (instead of following links or opening photos). */
 function onPick(e: MouseEvent) {
   const t = e.target as HTMLElement;
@@ -94,8 +108,8 @@ function onPick(e: MouseEvent) {
     }
   }
   if (!blockId) {
-    if (t.closest(".cover")) window.parent.postMessage({ type: "journeys-pick", where: "trip" }, location.origin);
-    else if (t.closest("#notes")) window.parent.postMessage({ type: "journeys-pick", where: "notes" }, location.origin);
+    const field = fieldAt(t);
+    if (field) window.parent.postMessage({ type: "journeys-pick", field }, location.origin);
     return;
   }
   window.parent.postMessage({ type: "journeys-pick", blockId }, location.origin);

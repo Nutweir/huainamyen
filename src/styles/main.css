@@ -45,6 +45,8 @@
   .admin-app .rich { min-height: 2.2em; outline: none; line-height: 1.8; }
   .admin-app .rich p { margin: 0; }
   .admin-app .ProseMirror:focus { outline: none; }
+  /* the field a click in the live preview took you to */
+  .admin-app .field-flash { outline: 3px solid var(--color-forest); outline-offset: 4px; border-radius: 10px; transition: outline-color 1.4s ease; }
   /* while a block is being dragged */
   .is-dragging, .is-dragging * { cursor: grabbing !important; user-select: none; }
 }

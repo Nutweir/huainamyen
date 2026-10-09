@@ -24,7 +24,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
     <button type="button" class="btn mt-3" @click="create">+ เพิ่มข้อมูลการเดินทาง</button>
   </div>
   <div v-else class="grid gap-6">
-    <section class="card grid gap-3 p-4" aria-labelledby="n-intro" data-preview="#notes">
+    <section class="card grid gap-3 p-4" aria-labelledby="n-intro" data-preview="#notes" data-field="notes-intro">
       <h3 id="n-intro" class="font-display text-lg">บทนำ</h3>
       <label class="field"><span>คำนำ</span><textarea v-model="n.lede" class="input" rows="2" /></label>
       <label class="field"><span>หมายเหตุ</span><textarea v-model="n.disclaimer" class="input" rows="2" /></label>
@@ -33,7 +33,7 @@ const total = computed(() => (n.value?.expenses || []).reduce((s, e) => s + (Num
 
     <section class="card grid gap-3 p-4" aria-labelledby="n-sec">
       <h3 id="n-sec" class="font-display text-lg">หัวข้อ</h3>
-      <details v-for="(s, i) in n.sections" :key="i" class="rounded-lg border border-[#ece6da] p-3" :data-preview="`#${s.anchor}`">
+      <details v-for="(s, i) in n.sections" :key="i" class="rounded-lg border border-[#ece6da] p-3" :data-preview="`#${s.anchor}`" :data-field="`notes:${s.anchor}`">
         <summary class="cursor-pointer font-medium">{{ s.title || "(ไม่มีชื่อ)" }} <span class="text-xs text-muted">#{{ s.anchor }}</span></summary>
         <div class="mt-3 grid gap-2">
           <div class="grid grid-cols-3 gap-2">

@@ -8,7 +8,7 @@ import { useRouter } from "vue-router";
 import type { TripBundle } from "@/types/content";
 
 const props = defineProps<{ bundle: TripBundle; focus: string }>();
-const emit = defineEmits<{ close: []; pick: [{ blockId?: string; where?: "trip" | "notes" }] }>();
+const emit = defineEmits<{ close: []; pick: [{ blockId?: string; field?: string }] }>();
 const router = useRouter();
 
 const DEVICES = { phone: { w: 390, label: "มือถือ" }, desktop: { w: 1280, label: "จอใหญ่" } } as const;
@@ -38,9 +38,9 @@ watch(slots, () => send(false));
 
 function onMessage(e: MessageEvent) {
   if (e.origin !== location.origin || e.source !== frame.value?.contentWindow) return;
-  const m = e.data as { type?: string; blockId?: string; where?: "trip" | "notes" };
+  const m = e.data as { type?: string; blockId?: string; field?: string };
   if (m?.type === "journeys-preview-ready") { ready.value = true; send(true); }
-  else if (m?.type === "journeys-pick") emit("pick", { blockId: m.blockId, where: m.where });
+  else if (m?.type === "journeys-pick") emit("pick", { blockId: m.blockId, field: m.field });
 }
 let ro: ResizeObserver | null = null;
 onMounted(() => {

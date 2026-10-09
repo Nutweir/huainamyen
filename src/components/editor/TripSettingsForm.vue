@@ -57,26 +57,26 @@ function addEnding() {
     <section class="card grid gap-3 p-4" aria-labelledby="s-basic" data-preview="#top">
       <h3 id="s-basic" class="font-display text-lg">ข้อมูลทริป</h3>
       <div class="grid gap-3 md:grid-cols-2">
-        <label class="field"><span>ชื่อทริป</span><input v-model="t.title" class="input" maxlength="160"></label>
+        <label class="field" data-field="title"><span>ชื่อทริป</span><input v-model="t.title" class="input" maxlength="160"></label>
         <label class="field"><span>ชื่อรอง / ชื่อท้องถิ่น</span><input v-model="t.titleLocal" class="input"></label>
         <label class="field"><span>ลิงก์ (slug)</span><input v-model="t.slug" class="input font-mono text-sm" @change="checkSlug"><small v-if="slugError" class="text-xs text-danger">{{ slugError }}</small><small v-else class="text-xs text-muted">/journeys/{{ t.slug }}<template v-if="t.publishedAt"> · เปลี่ยนแล้วลิงก์ที่แชร์ไปจะเสีย</template></small></label>
-        <label class="field"><span>สถานที่</span><input v-model="t.location" class="input"></label>
-        <label class="field"><span>วันไป</span><input v-model="t.startDate" class="input" type="date" required></label>
+        <label class="field" data-field="location"><span>สถานที่</span><input v-model="t.location" class="input"></label>
+        <label class="field" data-field="dates"><span>วันไป</span><input v-model="t.startDate" class="input" type="date" required></label>
         <label class="field"><span>วันกลับ</span><input v-model="t.endDate" class="input" type="date" :min="t.startDate"></label>
         <label class="field"><span>ระยะเวลา (เช่น 2 วัน 1 คืน)</span><input v-model="t.durationLabel" class="input"></label>
         <label class="field"><span>ไปกับใคร</span><input v-model="t.companions" class="input"></label>
       </div>
       <label class="field"><span>เรื่องย่อ (แสดงในรายการทริป)</span><textarea v-model="t.summary" class="input" rows="3" /></label>
       <label class="field"><span>แท็ก (คั่นด้วย ,)</span><input v-model="tagText" class="input"></label>
-      <LinesField v-model:lines="t.epigraph" label="คำนำบนหน้าปก (หนึ่งบรรทัดต่อแถว)" :rows="3" />
-      <label class="field"><span>ข้อมูลบนหน้าปก (หัวข้อ: ค่า หนึ่งรายการต่อแถว)</span><textarea v-model.lazy="metaText" class="input" rows="3" /></label>
+      <LinesField v-model:lines="t.epigraph" data-field="epigraph" label="คำนำบนหน้าปก (หนึ่งบรรทัดต่อแถว)" :rows="3" />
+      <label class="field" data-field="coverMeta"><span>ข้อมูลบนหน้าปก (หัวข้อ: ค่า หนึ่งรายการต่อแถว)</span><textarea v-model.lazy="metaText" class="input" rows="3" /></label>
       <label class="flex items-center gap-2 text-sm"><input v-model="t.showPlaceholders" type="checkbox"> แสดงช่องรอรูปเมื่อเปิดด้วย ?slots</label>
     </section>
 
     <section class="card grid gap-3 p-4" aria-labelledby="s-img" data-preview="#top">
       <h3 id="s-img" class="font-display text-lg">รูปปกและรูปตอนแชร์</h3>
       <div class="grid gap-4 sm:grid-cols-2">
-        <div>
+        <div data-field="cover">
           <p class="text-sm font-medium">รูปปก</p>
           <img v-if="thumb(t.coverId)" :src="thumb(t.coverId)" alt="รูปปก" class="mt-1 aspect-video w-full rounded object-cover">
           <div v-else class="mt-1 grid aspect-video place-items-center rounded bg-[#efe9dd] text-sm text-muted">ยังไม่มี</div>
@@ -109,7 +109,7 @@ function addEnding() {
       </div>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="s-roll" data-preview="#roll">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-roll" data-preview="#roll" data-field="roll">
       <h3 id="s-roll" class="font-display text-lg">ม้วนฟิล์ม (ท้ายบันทึก)</h3>
       <div class="flex flex-wrap gap-1.5">
         <img v-for="id in bundle.gallery" :key="id" :src="thumb(id)" alt="" class="h-14 w-20 rounded object-cover">
@@ -118,7 +118,7 @@ function addEnding() {
       <button type="button" class="btn btn-ghost w-fit" @click="pick('gallery')">เลือกรูปในม้วนฟิล์ม (เรียงตามลำดับที่เลือก)</button>
     </section>
 
-    <section class="card grid gap-3 p-4" aria-labelledby="s-end" data-preview="#ending">
+    <section class="card grid gap-3 p-4" aria-labelledby="s-end" data-preview="#ending" data-field="ending">
       <h3 id="s-end" class="font-display text-lg">หน้าปิดท้าย</h3>
       <template v-if="bundle.ending">
         <div class="grid gap-3 md:grid-cols-2">

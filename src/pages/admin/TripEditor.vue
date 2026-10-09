@@ -3,7 +3,7 @@
  * Write a trip: days on the left, the day's story blocks in the middle (drag or arrows to reorder),
  * the selected block's properties on the right. Autosaves; Publish makes the current state public.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute } from "vue-router";
 import { BLOCK_TYPES, MOODS, type Block, type BlockType, type MediaAsset } from "@/types/content";
 import { useEditorStore } from "@/stores/editor";
@@ -212,14 +212,30 @@ function revealRow(id: string) {
   if (!id) return;
   setTimeout(() => document.querySelector(`[data-row-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 50);
 }
-// a click in the live preview picks that block
-function onPick(p: { blockId?: string; where?: "trip" | "notes" }) {
-  if (p.where) { tab.value = p.where; return; }
+// a click in the live preview picks that block, or the form field behind that part of the page
+function onPick(p: { blockId?: string; field?: string }) {
+  if (p.field) { void showField(p.field); return; }
   const d = b.value?.days.findIndex(x => x.blocks.some(y => y.id === p.blockId)) ?? -1;
   if (d < 0 || !p.blockId) return;
   tab.value = "story";
   ed.selected = { day: d, blockId: p.blockId };
   revealRow(p.blockId);
+}
+
+/** Open the tab with this field, bring it into view, put the cursor in it and flash it. */
+async function showField(field: string) {
+  tab.value = field.startsWith("notes") ? "notes" : "trip";
+  await nextTick();
+  await nextTick();
+  const el = document.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
+  if (!el) return;
+  if (el instanceof HTMLDetailsElement) el.open = true;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  const input = el.querySelector<HTMLElement>("input:not([type=checkbox]), textarea, select, button");
+  input?.focus({ preventScroll: true });
+  formFocus.value = (el.closest<HTMLElement>("[data-preview]")?.dataset.preview) || formFocus.value;
+  el.classList.add("field-flash");
+  setTimeout(() => el.classList.remove("field-flash"), 1600);
 }
 
 // photos from the computer: dropped on the list (at the line) or pasted (after the selected block)

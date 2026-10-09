@@ -217,3 +217,23 @@ test("see what changed since publishing, and the library says where a photo is u
   await expect(row).toContainText("ชุดรูป");
   await expect(row).toBeInViewport();
 });
+
+test("clicking the cover photo, title or a travel note in the preview takes you to that field", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await page.getByRole("tab", { name: /ข้อมูลทริป/ }).click();
+  const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]');
+
+  await preview.locator(".cover-photo img").click();
+  const cover = page.locator('[data-field="cover"]');
+  await expect(cover).toHaveClass(/field-flash/);
+  await expect(cover).toBeInViewport();
+
+  await preview.locator(".cover-meta").click();
+  await expect(page.locator('[data-field="coverMeta"] textarea')).toBeFocused();
+
+  await preview.locator("#notes .note-sec").first().click();
+  await expect(page.getByRole("tab", { name: "ข้อมูลการเดินทาง" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('details[data-field^="notes:"][open]').first()).toBeInViewport();
+});
