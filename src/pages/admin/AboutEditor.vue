@@ -78,7 +78,9 @@ const move = (i: number, d: number) => { const p = paragraphs.value, j = i + d; 
 // live preview: the real About page in a frame, fed the draft
 const frame = ref<HTMLIFrameElement | null>(null);
 const ready = ref(false);
-const src = router.resolve("/about?embed").href;
+// a fresh copy every time: GitHub Pages lets browsers keep pages 10 minutes, so right after a deploy
+// the preview could otherwise run the previous version of the site next to the new admin
+const src = router.resolve(`/about?embed&v=${Date.now()}`).href;
 function send() { if (ready.value && draft.value) frame.value?.contentWindow?.postMessage({ type: "journeys-site-draft", site: JSON.stringify(draft.value) }, location.origin); }
 let timer = 0;
 watch(draft, () => { clearTimeout(timer); timer = window.setTimeout(send, 200); }, { deep: true });

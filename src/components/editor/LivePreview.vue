@@ -22,7 +22,9 @@ const frame = ref<HTMLIFrameElement | null>(null);
 const box = ref<HTMLElement | null>(null);
 const size = ref({ w: 0, h: 0 });
 const ready = ref(false);
-const src = computed(() => router.resolve(`/admin/trips/${props.bundle.trip.id}/preview?embed`).href);
+// fresh each time the panel opens, never an older cached version of the page (see AboutEditor)
+const opened = Date.now();
+const src = computed(() => router.resolve(`/admin/trips/${props.bundle.trip.id}/preview?embed&v=${opened}`).href);
 const scale = computed(() => (size.value.w ? Math.min(1, size.value.w / DEVICES[device.value].w) : 1));
 
 function send(withBundle: boolean) {
