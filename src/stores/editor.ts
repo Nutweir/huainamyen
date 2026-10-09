@@ -219,6 +219,16 @@ export const useEditorStore = defineStore("editor", () => {
     days.splice(to, 0, d);
     days.forEach((x, n) => { x.dayNumber = n + 1; });
   }
+  /** Days in calendar order, renumbered; days without a date keep their place after the dated ones before them. */
+  function sortDaysByDate() {
+    commit(); queueMicrotask(commit);
+    const days = bundle.value!.days;
+    const keep = days[selected.value.day]?.id;
+    const sorted = [...days].map((d, i) => ({ d, i })).sort((a, b) => (a.d.date && b.d.date ? a.d.date.localeCompare(b.d.date) : 0) || a.i - b.i).map(x => x.d);
+    days.splice(0, days.length, ...sorted);
+    days.forEach((x, n) => { x.dayNumber = n + 1; });
+    selected.value = { day: Math.max(0, days.findIndex(d => d.id === keep)), blockId: selected.value.blockId };
+  }
   function useMedia(asset: MediaAsset) {
     if (!bundle.value) return;
     const i = bundle.value.media.findIndex(m => m.id === asset.id);
@@ -265,7 +275,7 @@ export const useEditorStore = defineStore("editor", () => {
     bundle, savedAt, state, message, lastSaved, recoverable, selected, versions, dirty,
     undo, redo, canUndo, canRedo, published, batch,
     load, save, overwrite, discardLocal, restoreDraft, ignoreDraft,
-    addBlock, removeBlock, duplicateBlock, moveBlock, addDay, removeDay, moveDay, useMedia,
+    addBlock, removeBlock, duplicateBlock, moveBlock, addDay, removeDay, moveDay, sortDaysByDate, useMedia,
     publish, setStatus, saveVersion, restoreVersion, refreshVersions,
   };
 });

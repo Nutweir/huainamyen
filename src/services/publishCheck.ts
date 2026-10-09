@@ -27,6 +27,12 @@ export function checkTrip(bundle: TripBundle): Issue[] {
   else if (!media.has(t.coverId)) trip("error", "รูปปกหายไปจากคลัง");
   if (!(t.seoDescription || t.summary).trim()) trip("warn", "ยังไม่มีเรื่องย่อ — ตอนแชร์ลิงก์จะไม่มีคำอธิบาย");
 
+  // days whose dates go backwards (e.g. after an accidental swap)
+  bundle.days.forEach((day, d) => {
+    const prev = bundle.days[d - 1];
+    if (prev?.date && day.date && day.date < prev.date) issues.push({ level: "warn", message: `Day ${d + 1} (${day.date}) มาก่อนวันที่ของ Day ${d} (${prev.date}) — วันไม่เรียงตามวันที่ (กด “เรียงวันตามวันที่” ในหน้าเรื่องราว)`, where: { tab: "story", day: d, blockId: "" } });
+  });
+
   const anchors = new Map<string, number>();
   bundle.days.forEach((day, d) => {
     if (!day.blocks.length) issues.push({ level: "warn", message: `Day ${d + 1} ยังว่าง`, where: { tab: "story", day: d, blockId: "" } });

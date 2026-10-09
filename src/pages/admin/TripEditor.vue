@@ -119,6 +119,21 @@ function del(x: Block) {
   if (!confirm(`ลบ “${BLOCK_LABELS[x.type]}: ${summary(x).slice(0, 40)}”?`)) return;
   ed.removeBlock(dayIndex.value, x.id);
 }
+/** Swapping whole days is rare and big: ask first (Ctrl+Z still undoes it). */
+function moveDayBy(d: -1 | 1) {
+  const i = dayIndex.value, j = i + d, days = b.value!.days;
+  if (!confirm(`สลับลำดับ Day ${pad2(days[i].dayNumber)} กับ Day ${pad2(days[j].dayNumber)} ทั้งวัน?\n(วันที่ของแต่ละวันไม่เปลี่ยน · ย้อนได้ด้วย Ctrl+Z)`)) return;
+  ed.moveDay(i, j);
+  ed.selected = { day: j, blockId: null };
+}
+// days whose dates go backwards: offer to put them back in calendar order
+const outOfOrder = computed(() => {
+  const days = b.value?.days || [];
+  const i = days.findIndex((d, n) => n > 0 && !!d.date && !!days[n - 1].date && d.date < days[n - 1].date!);
+  return i > 0 ? { a: days[i - 1], b: days[i] } : null;
+});
+function sortDays() { ed.sortDaysByDate(); toast("เรียงวันตามวันที่แล้ว — ย้อนได้ด้วย Ctrl+Z"); }
+
 function delDay(i: number) {
   const d = b.value!.days[i];
   if (!confirm(`ลบวันที่ ${d.dayNumber} และเนื้อหา ${d.blocks.length} ส่วนในวันนั้น?\n(ย้อนกลับได้จากแท็บเวอร์ชัน ถ้าเคยเก็บไว้)`)) return;
@@ -349,6 +364,11 @@ onBeforeRouteLeave(async () => {
       {{ ed.message }} <button class="ml-2 underline" @click="ed.save()">ลองอีกครั้ง</button>
     </div>
 
+    <div v-if="outOfOrder" class="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#e8d6a8] bg-[#fbf3df] p-3 text-sm" role="alert">
+      <span class="flex-1">วันไม่เรียงตามวันที่: Day {{ pad2(outOfOrder.a.dayNumber) }} เป็น {{ outOfOrder.a.date }} แต่ Day {{ pad2(outOfOrder.b.dayNumber) }} เป็น {{ outOfOrder.b.date }}</span>
+      <button class="btn min-h-8 px-3" @click="sortDays">เรียงวันตามวันที่</button>
+    </div>
+
     <!-- tabs -->
     <div class="mt-4 flex gap-1 overflow-x-auto" role="tablist" aria-label="ส่วนของทริป">
       <button v-for="[k, l] in ([['story', 'เรื่องราว'], ['trip', 'ข้อมูลทริป · ปก · SEO'], ['notes', 'ข้อมูลการเดินทาง'], ['versions', 'เวอร์ชัน']] as const)" :key="k" role="tab" :aria-selected="tab === k" class="shrink-0 rounded-full px-4 py-1.5 text-sm" :class="tab === k ? 'bg-ink text-white' : 'border border-rule bg-white'" @click="tab = k">{{ l }}</button>
@@ -387,8 +407,9 @@ onBeforeRouteLeave(async () => {
             <label class="field"><span>บรรยากาศเริ่มต้น</span><select v-model="day.mood" class="input"><option v-for="m in MOODS" :key="m" :value="m">{{ m }}</option></select></label>
             <label class="field"><span>ประโยคปิดวัน</span><input v-model="day.closing" class="input"></label>
             <div class="flex gap-1 sm:col-span-full">
-              <button class="btn btn-ghost min-h-8 flex-1 px-2" :disabled="dayIndex === 0" aria-label="เลื่อนวันขึ้น" @click="ed.moveDay(dayIndex, dayIndex - 1); ed.selected.day--">↑</button>
-              <button class="btn btn-ghost min-h-8 flex-1 px-2" :disabled="dayIndex === b.days.length - 1" aria-label="เลื่อนวันลง" @click="ed.moveDay(dayIndex, dayIndex + 1); ed.selected.day++">↓</button>
+              <button class="btn btn-ghost min-h-8 px-3 text-xs" :disabled="dayIndex === 0" @click="moveDayBy(-1)">← สลับกับวันก่อน</button>
+              <button class="btn btn-ghost min-h-8 px-3 text-xs" :disabled="dayIndex === b.days.length - 1" @click="moveDayBy(1)">สลับกับวันถัดไป →</button>
+              <span class="flex-1" />
               <button class="btn btn-danger min-h-8 px-2" :disabled="b.days.length < 2" @click="delDay(dayIndex)">ลบวัน</button>
             </div>
           </div>

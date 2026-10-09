@@ -39,4 +39,12 @@ describe("pre-publish check", () => {
     expect(issues.filter(i => i.message.includes("ซ้ำกัน")).length).toBe(2);
     expect(issues.some(i => i.where.tab === "trip" && i.level === "error")).toBe(true);
   });
+
+  it("warns when days are out of calendar order (e.g. swapped by accident)", () => {
+    const b = clone(bundle);
+    b.days.reverse();
+    const w = checkTrip(b).find(i => i.message.includes("ไม่เรียงตามวันที่"));
+    expect(w).toMatchObject({ level: "warn", where: { tab: "story", day: 1 } });
+    expect(checkTrip(bundle).some(i => i.message.includes("ไม่เรียงตามวันที่"))).toBe(false);
+  });
 });

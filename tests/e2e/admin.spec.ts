@@ -286,3 +286,19 @@ test("start a trip from a shape: Thai title gets a link, days and moments are la
   await page.goto("admin/trips");
   await expect(page.locator("main ul > li.group").filter({ hasText: "ดอยหลวงเชียงดาว" })).toContainText("ฉบับร่าง");
 });
+
+test("swapping days asks first, and days out of date order can be put back with one click", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await openTrip(page, "Huai Nam Yen");
+  await page.locator('[data-day-drop="1"]').click();
+  let asked = "";
+  page.once("dialog", d => { asked = d.message(); void d.accept(); });
+  await page.getByRole("button", { name: /สลับกับวันก่อน/ }).click();
+  expect(asked).toContain("สลับลำดับ");
+  await expect(page.locator('[data-day-drop="0"]')).toContainText("2026-10-04");
+  await page.getByRole("button", { name: "เรียงวันตามวันที่" }).click();
+  await expect(page.locator('[data-day-drop="0"]')).toContainText("2026-10-03");
+  await expect(page.locator('[data-day-drop="1"]')).toContainText("2026-10-04");
+  await expect(page.getByRole("button", { name: "เรียงวันตามวันที่" })).toHaveCount(0);
+});
