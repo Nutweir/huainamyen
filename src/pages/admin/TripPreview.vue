@@ -23,6 +23,7 @@ const slots = ref(true);
 const stamp = ref(0);
 const focusCss = ref("");
 let lastFocus = "";
+const PICK_CSS = ".preview-pick [data-block], .preview-pick section.event > header { cursor: pointer; } .preview-pick [data-block]:hover, .preview-pick section.event > header:hover { outline: 1px dashed rgb(63 94 69 / .55); outline-offset: 6px; border-radius: 2px; }";
 
 async function load() {
   try {
@@ -71,22 +72,54 @@ function onMessage(e: MessageEvent) {
   void show(m.focus || "");
 }
 
+/** In the editor's preview a click picks that block for editing (instead of following links or opening photos). */
+function onPick(e: MouseEvent) {
+  const t = e.target as HTMLElement;
+  if (t.closest(".topbar")) {
+    // the reading bar's day jumps still work; links that would leave this page don't
+    const a = t.closest("a");
+    if (a && !(a.getAttribute("href") || "").startsWith("#")) e.preventDefault();
+    return;
+  }
+  e.preventDefault();
+  e.stopPropagation();
+  const el = t.closest<HTMLElement>("[data-block]");
+  let blockId = el?.dataset.block || "";
+  if (!blockId) {
+    // a moment's heading: its section id is the event's anchor
+    const section = t.closest<HTMLElement>("section.event[id]");
+    for (const d of bundle.value?.days || []) {
+      const ev = d.blocks.find(x => x.type === "event" && x.data.anchor === section?.id);
+      if (ev) blockId = ev.id;
+    }
+  }
+  if (!blockId) {
+    if (t.closest(".cover")) window.parent.postMessage({ type: "journeys-pick", where: "trip" }, location.origin);
+    else if (t.closest("#notes")) window.parent.postMessage({ type: "journeys-pick", where: "notes" }, location.origin);
+    return;
+  }
+  window.parent.postMessage({ type: "journeys-pick", blockId }, location.origin);
+}
+
 const channel = !embed && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("journeys-preview") : null;
 onMounted(() => {
   document.body.classList.add("diary");
   if (embed) {
     addEventListener("message", onMessage);
+    addEventListener("click", onPick, true);
+    document.documentElement.classList.add("preview-pick");
     window.parent.postMessage({ type: "journeys-preview-ready" }, location.origin);
   } else {
     void load();
     channel?.addEventListener("message", e => { if ((e.data as { tripId?: string })?.tripId === id) void load(); });
   }
 });
-onBeforeUnmount(() => { channel?.close(); removeEventListener("message", onMessage); document.body.classList.remove("diary"); });
+onBeforeUnmount(() => { channel?.close(); removeEventListener("message", onMessage); removeEventListener("click", onPick, true); document.documentElement.classList.remove("preview-pick"); document.body.classList.remove("diary"); });
 </script>
 
 <template>
   <component :is="'style'" v-if="focusCss">{{ focusCss }}</component>
+  <component :is="'style'" v-if="embed">{{ PICK_CSS }}</component>
   <div v-if="!embed" class="fixed bottom-3 right-3 z-[60] flex items-center gap-2 rounded-full bg-[#23211d] px-3 py-1.5 font-sans text-xs text-white shadow-lg" role="status">
     <span>ตัวอย่าง (ยังไม่เผยแพร่)</span>
     <label class="flex items-center gap-1"><input v-model="slots" type="checkbox"> ช่องรอรูป</label>

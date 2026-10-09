@@ -27,6 +27,52 @@ export const useEditorStore = defineStore("editor", () => {
 
   let timer = 0, retry = 0, version = 0, savingVersion = 0, quiet = false, saving: Promise<void> | null = null;
 
+  // ── undo / redo: whole-content snapshots; a burst of typing is one step, structure changes are steps at once ──
+  const HISTORY = 60, GROUP_MS = 700;
+  const undoStack = ref<string[]>([]), redoStack = ref<string[]>([]);
+  let committed = "", historyTimer = 0, applyingHistory = false;
+  const pendingEdit = ref(false);
+  const snap = () => (bundle.value ? JSON.stringify({ ...bundle.value, media: [] }) : "");
+  function commit() {
+    clearTimeout(historyTimer);
+    pendingEdit.value = false;
+    const now = snap();
+    if (!now || now === committed) return;
+    if (committed) { undoStack.value.push(committed); if (undoStack.value.length > HISTORY) undoStack.value.shift(); }
+    committed = now;
+    redoStack.value = [];
+  }
+  function resetHistory() { clearTimeout(historyTimer); pendingEdit.value = false; undoStack.value = []; redoStack.value = []; committed = snap(); }
+  function applyHistory(json: string) {
+    const prev = JSON.parse(json) as TripBundle;
+    applyingHistory = true;
+    bundle.value = { ...prev, media: bundle.value!.media };
+    committed = json;
+    // the restored state still has to be saved, so the autosave watcher runs; only history skips it
+    queueMicrotask(() => { applyingHistory = false; });
+    const d = Math.min(selected.value.day, prev.days.length - 1);
+    const keep = prev.days[d]?.blocks.some(x => x.id === selected.value.blockId);
+    selected.value = { day: Math.max(0, d), blockId: keep ? selected.value.blockId : null };
+  }
+  function undo() {
+    commit();
+    const prev = undoStack.value.pop();
+    if (!prev) return false;
+    redoStack.value.push(committed);
+    applyHistory(prev);
+    return true;
+  }
+  function redo() {
+    commit();
+    const next = redoStack.value.pop();
+    if (!next) return false;
+    undoStack.value.push(committed);
+    applyHistory(next);
+    return true;
+  }
+  const canUndo = computed(() => undoStack.value.length > 0 || pendingEdit.value);
+  const canRedo = computed(() => redoStack.value.length > 0);
+
   const dirty = computed(() => ["unsaved", "saving", "offline", "error", "conflict"].includes(state.value));
   // compare content only (timestamps and publish state change on every save)
   const contentOf = (b: TripBundle) => JSON.stringify({ ...b, media: [], trip: { ...b.trip, updatedAt: "", status: "", publishedVersionId: null, publishedAt: null } });
@@ -44,6 +90,7 @@ export const useEditorStore = defineStore("editor", () => {
     replace(r.bundle);
     savedAt.value = r.savedAt;
     selected.value = { day: 0, blockId: null };
+    resetHistory();
     // unsaved writing left in this browser (closed tab, lost connection) → offer to bring it back
     const draft = await readDraft(id);
     if (draft && contentOf(draft.bundle) !== contentOf(r.bundle)) recoverable.value = { bundle: draft.bundle, at: draft.at };
@@ -53,6 +100,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   watch(bundle, () => {
     if (quiet || !bundle.value) return;
+    if (!applyingHistory) { pendingEdit.value = true; clearTimeout(historyTimer); historyTimer = window.setTimeout(commit, GROUP_MS); }
     version++;
     state.value = "unsaved";
     void keepDraft(bundle.value, savedAt.value);
@@ -104,6 +152,7 @@ export const useEditorStore = defineStore("editor", () => {
   // ── structure ──
   const day = (i: number) => bundle.value!.days[i];
   function addBlock<K extends BlockType>(dayIndex: number, type: K, at?: number, data?: Partial<Block<K>["data"]>): Block<K> {
+    commit(); queueMicrotask(commit);
     const b = newBlock(type, data as never) as Block<K>;
     const list = day(dayIndex).blocks;
     list.splice(at ?? list.length, 0, b as Block);
@@ -111,11 +160,13 @@ export const useEditorStore = defineStore("editor", () => {
     return b;
   }
   function removeBlock(dayIndex: number, id: string) {
+    commit(); queueMicrotask(commit);
     const list = day(dayIndex).blocks, i = list.findIndex(b => b.id === id);
     if (i >= 0) list.splice(i, 1);
     if (selected.value.blockId === id) selected.value = { day: dayIndex, blockId: null };
   }
   function duplicateBlock(dayIndex: number, id: string) {
+    commit(); queueMicrotask(commit);
     const list = day(dayIndex).blocks, i = list.findIndex(b => b.id === id);
     if (i < 0) return;
     const copy = { ...clone(list[i]), id: uid() } as Block;
@@ -124,6 +175,7 @@ export const useEditorStore = defineStore("editor", () => {
     selected.value = { day: dayIndex, blockId: copy.id };
   }
   function moveBlock(dayIndex: number, from: number, to: number, toDay = dayIndex) {
+    commit(); queueMicrotask(commit);
     const src = day(dayIndex).blocks;
     const [b] = src.splice(from, 1);
     if (!b) return;
@@ -131,6 +183,7 @@ export const useEditorStore = defineStore("editor", () => {
     selected.value = { day: toDay, blockId: b.id };
   }
   function addDay() {
+    commit(); queueMicrotask(commit);
     const days = bundle.value!.days;
     const last = days.at(-1);
     let date: string | null = null;
@@ -139,11 +192,13 @@ export const useEditorStore = defineStore("editor", () => {
     selected.value = { day: days.length - 1, blockId: null };
   }
   function removeDay(i: number) {
+    commit(); queueMicrotask(commit);
     bundle.value!.days.splice(i, 1);
     bundle.value!.days.forEach((d, n) => { d.dayNumber = n + 1; });
     selected.value = { day: Math.max(0, i - 1), blockId: null };
   }
   function moveDay(from: number, to: number) {
+    commit(); queueMicrotask(commit);
     const days = bundle.value!.days;
     const [d] = days.splice(from, 1);
     days.splice(to, 0, d);
@@ -179,6 +234,7 @@ export const useEditorStore = defineStore("editor", () => {
   async function refreshVersions() { if (bundle.value) versions.value = await repo.listVersions(bundle.value.trip.id); }
   async function saveVersion(label: string) { await save(); await repo.saveVersion(bundle.value!, label || "บันทึกเวอร์ชัน"); await refreshVersions(); }
   async function restoreVersion(id: string) {
+    commit();
     const v = await repo.getVersion(id);
     await repo.saveVersion(bundle.value!, "ก่อนย้อนกลับ (สำรองอัตโนมัติ)");
     const keep = bundle.value!.trip;
@@ -191,6 +247,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   return {
     bundle, savedAt, state, message, lastSaved, recoverable, selected, versions, dirty,
+    undo, redo, canUndo, canRedo,
     load, save, overwrite, discardLocal, restoreDraft, ignoreDraft,
     addBlock, removeBlock, duplicateBlock, moveBlock, addDay, removeDay, moveDay, useMedia,
     publish, setStatus, saveVersion, restoreVersion, refreshVersions,

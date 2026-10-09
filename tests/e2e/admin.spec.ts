@@ -53,6 +53,10 @@ test("write a new trip: draft stays private until published, then readers see it
 
   // publish → readers see it
   await page.getByRole("button", { name: "เผยแพร่", exact: true }).click();
+  // the check runs first; a new trip has no cover yet, which is a warning, not a blocker
+  const check = page.locator("dialog[open]");
+  await expect(check).toContainText("ยังไม่มีรูปปก");
+  await check.getByRole("button", { name: /^เผยแพร่/ }).click();
   await expect(page.getByText("เผยแพร่แล้ว").first()).toBeVisible();
   await reader.goto("journeys/e2e-trip");
   await expect(reader.getByText("ข้อความลับก่อนเผยแพร่")).toBeVisible();
@@ -120,4 +124,63 @@ test("drag blocks with the mouse to reorder them, or onto another day", async ({
   await page.mouse.up();
   await expect(day2).toContainText(`${before + 1} ส่วน`);
   await expect(page.locator("[data-row]").last()).toContainText("ถ้าดูจากเวลาแล้ว");
+});
+
+test("click in the live preview to edit that spot; undo with Ctrl+Z", async ({ page }) => {
+  page.on("dialog", d => d.accept());
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าบันทึก"]');
+  await preview.locator("[data-block]").filter({ hasText: "ระหว่างทางบรรยากาศดี" }).first().click();
+  await expect(page.locator('[data-row] button[aria-pressed="true"]')).toContainText("ระหว่างทางบรรยากาศดี");
+
+  const rows = page.locator("[data-row]");
+  const third = await rows.nth(2).innerText();
+  await rows.nth(2).getByRole("button", { name: /^ลบ/ }).click();
+  await expect.poll(() => rows.nth(2).innerText()).not.toBe(third);
+  await page.locator("body").click({ position: { x: 5, y: 300 } });
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => rows.nth(2).innerText()).toBe(third);
+  await page.keyboard.press("Control+y");
+  await expect.poll(() => rows.nth(2).innerText()).not.toBe(third);
+  await page.getByRole("button", { name: "ย้อนกลับ" }).click();
+  await expect.poll(() => rows.nth(2).innerText()).toBe(third);
+});
+
+test("publishing is held back while something is broken, and the list takes you there", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  await page.getByRole("button", { name: /\+ เพิ่มเนื้อหา/ }).click();
+  await page.getByRole("button", { name: "รูป", exact: true }).click();
+  await page.getByRole("button", { name: "เผยแพร่ฉบับนี้" }).click();
+  const check = page.locator("dialog[open]");
+  await expect(check).toContainText("ต้องแก้ก่อนเผยแพร่");
+  await expect(check.getByRole("button", { name: /^เผยแพร่/ })).toBeDisabled();
+  await check.getByRole("button", { name: /ยังไม่ได้เลือกรูป/ }).click();
+  await expect(check).toBeHidden();
+  await expect(page.locator('[data-row] button[aria-pressed="true"]')).toContainText("ยังไม่เลือกรูป");
+});
+
+test("drop a photo file from the computer between two paragraphs", async ({ page }) => {
+  await signIn(page);
+  await page.goto("admin/trips");
+  await page.getByRole("link", { name: "แก้ไข" }).first().click();
+  const rows = page.locator("[data-row]");
+  await expect(rows.nth(3)).toBeVisible();
+  const [above, below] = [await rows.nth(2).innerText(), await rows.nth(3).innerText()];
+  // a real image file, dropped just above the 4th row
+  await rows.nth(3).evaluate(async el => {
+    const blob = await (await fetch("/huainamyen/trips/huai-nam-yen/day-02/waterfall.jpg")).blob();
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], "from-computer.jpg", { type: "image/jpeg" }));
+    el.scrollIntoView({ block: "center" });
+    const r = el.getBoundingClientRect();
+    for (const type of ["dragenter", "dragover", "drop"]) el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, clientX: r.left + 80, clientY: r.top + 3, dataTransfer: dt }));
+  });
+  await expect(page.locator(".fixed.bottom-4")).toContainText("เพิ่ม 1 ไฟล์แล้ว", { timeout: 15_000 });
+  await expect.poll(() => rows.nth(2).innerText()).toBe(above);
+  await expect(rows.nth(3)).toContainText("รูป");
+  await expect.poll(() => rows.nth(4).innerText()).toBe(below);
 });

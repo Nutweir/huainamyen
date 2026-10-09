@@ -21,6 +21,9 @@ import VersionPanel from "@/components/editor/VersionPanel.vue";
 import LivePreview from "@/components/editor/LivePreview.vue";
 import QuickInsert, { type InsertMode } from "@/components/editor/QuickInsert.vue";
 import { useBlockDrag } from "@/composables/useBlockDrag";
+import { uploadFiles, useFileDrop } from "@/composables/useFileDrop";
+import { checkTrip, type Issue } from "@/services/publishCheck";
+import PublishCheck from "@/components/editor/PublishCheck.vue";
 
 const route = useRoute();
 const ed = useEditorStore();
@@ -141,14 +144,74 @@ const { drag, start: startDrag } = useBlockDrag({
   },
 });
 
-async function publish() {
+// publish: check first; the dialog lists what to look at, each item takes you there
+const checkDlg = ref<InstanceType<typeof PublishCheck> | null>(null);
+const issues = ref<Issue[]>([]);
+function publish() {
   if (!b.value) return;
-  if (!b.value.trip.title || !b.value.trip.slug || !b.value.trip.startDate) { toast("ต้องมีชื่อ ลิงก์ และวันไปก่อนเผยแพร่", true); tab.value = "trip"; return; }
-  if (!confirm(b.value.trip.publishedAt ? "เผยแพร่ฉบับนี้แทนฉบับที่ผู้อ่านเห็นอยู่?" : "เผยแพร่ทริปนี้ให้ทุกคนอ่านได้?")) return;
+  issues.value = checkTrip(b.value);
+  checkDlg.value?.open();
+}
+async function confirmPublish() {
   publishing.value = true;
-  try { await ed.publish(); toast("เผยแพร่แล้ว"); }
+  try { await ed.publish(); checkDlg.value?.close(); toast("เผยแพร่แล้ว"); }
   catch (e) { toast((e as Error).message, true); }
   finally { publishing.value = false; }
+}
+function goTo(i: Issue) {
+  if (i.where.tab !== "story") { tab.value = i.where.tab; return; }
+  tab.value = "story";
+  ed.selected = { day: i.where.day, blockId: i.where.blockId || null };
+  revealRow(i.where.blockId);
+}
+const dayLabel = (d: number) => `Day ${pad2(b.value?.days[d]?.dayNumber || d + 1)}`;
+
+/** Bring a block's row into view in the list (after the day switch has rendered). */
+function revealRow(id: string) {
+  if (!id) return;
+  setTimeout(() => document.querySelector(`[data-row-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 50);
+}
+// a click in the live preview picks that block
+function onPick(p: { blockId?: string; where?: "trip" | "notes" }) {
+  if (p.where) { tab.value = p.where; return; }
+  const d = b.value?.days.findIndex(x => x.blocks.some(y => y.id === p.blockId)) ?? -1;
+  if (d < 0 || !p.blockId) return;
+  tab.value = "story";
+  ed.selected = { day: d, blockId: p.blockId };
+  revealRow(p.blockId);
+}
+
+// photos from the computer: dropped on the list (at the line) or pasted (after the selected block)
+const uploading = ref<{ done: number; total: number } | null>(null);
+const { over: fileOver } = useFileDrop({
+  list: () => blockList.value,
+  enabled: () => tab.value === "story" && !!day.value && !uploading.value,
+  onFiles: (files, index) => void dropFiles(files, index),
+});
+async function dropFiles(files: File[], index: number | null) {
+  const d = dayIndex.value, list = day.value!.blocks;
+  // remember the neighbour, not the number: you may keep editing while the files upload
+  const at = index ?? (list.findIndex(x => x.id === ed.selected.blockId) + 1 || list.length);
+  const afterId = at > 0 ? list[at - 1]?.id : null;
+  uploading.value = { done: 0, total: files.length };
+  const errors: string[] = [];
+  const assets = await uploadFiles(files, { tripId: b.value!.trip.id }, (done, total, err) => { uploading.value = { done, total }; if (err) errors.push(err); });
+  uploading.value = null;
+  if (errors.length) toast(errors.join(" · "), true);
+  if (!assets.length) return;
+  // clips bring their poster frame along so they show in the story
+  if (assets.some(a => a.posterId)) {
+    const all = await repo.listMedia({ tripId: b.value!.trip.id });
+    assets.forEach(a => { const poster = all.find(m => m.id === a.posterId); if (poster) ed.useMedia(poster); });
+  }
+  onMedia(assets);
+  const blocks = b.value!.days[d].blocks;
+  let pos = afterId ? blocks.findIndex(x => x.id === afterId) + 1 : 0;
+  const photos = assets.filter(a => a.kind === "image"), clips = assets.filter(a => a.kind === "video");
+  if (photos.length > 1) ed.addBlock(d, "images", pos++, { items: photos.map(a => ({ mediaId: a.id })) });
+  else if (photos.length) ed.addBlock(d, "image", pos++, { item: { mediaId: photos[0].id } });
+  clips.forEach(c => ed.addBlock(d, "video", pos++, { mediaId: c.id }));
+  toast(`เพิ่ม ${assets.length} ไฟล์แล้ว — ลองเปลี่ยนรูปแบบดูในตัวอย่างสด`);
 }
 async function unpublish() {
   if (!confirm("ยกเลิกการเผยแพร่? ผู้อ่านจะเปิดทริปนี้ไม่ได้จนกว่าจะเผยแพร่อีกครั้ง")) return;
@@ -167,7 +230,13 @@ function download() {
 const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("journeys-preview") : null;
 watch(() => ed.state, s => { if (s === "saved" && b.value) channel?.postMessage({ tripId: b.value.trip.id }); });
 function keys(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void ed.save(); }
+  const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (mod && k === "s") { e.preventDefault(); void ed.save(); return; }
+  // inside a text field, Ctrl+Z belongs to that field; elsewhere it undoes the last change to the trip
+  const typing = (document.activeElement as HTMLElement | null)?.closest("input, textarea, select, .ProseMirror");
+  if (!mod || typing || document.querySelector("dialog[open]")) return;
+  if (k === "z" && !e.shiftKey) { e.preventDefault(); if (!ed.undo()) toast("ไม่มีอะไรให้ย้อนแล้ว"); }
+  else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); ed.redo(); }
 }
 onMounted(() => { addEventListener("keydown", keys); xlQuery?.addEventListener("change", onXl); });
 onBeforeUnmount(() => { removeEventListener("keydown", keys); xlQuery?.removeEventListener("change", onXl); channel?.close(); });
@@ -192,12 +261,16 @@ onBeforeRouteLeave(async () => {
       <StatusChip :status="b.trip.status" />
       <span class="text-sm" :class="stateClass" role="status" aria-live="polite">{{ STATE_TEXT[ed.state] }}</span>
       <div class="ml-auto flex flex-wrap gap-1.5">
+        <span class="flex" role="group" aria-label="ย้อนกลับ / ทำซ้ำ">
+          <button class="btn btn-ghost min-h-9 rounded-r-none px-3" :disabled="!ed.canUndo" title="ย้อนกลับ (Ctrl+Z)" aria-label="ย้อนกลับ" @click="ed.undo()">↶</button>
+          <button class="btn btn-ghost min-h-9 rounded-l-none border-l-0 px-3" :disabled="!ed.canRedo" title="ทำซ้ำ (Ctrl+Y)" aria-label="ทำซ้ำ" @click="ed.redo()">↷</button>
+        </span>
         <button v-if="ed.dirty" class="btn btn-ghost min-h-9 px-3" @click="ed.save()">บันทึก</button>
         <button class="btn btn-ghost min-h-9 px-3" :class="live ? 'bg-[#eee8dc]' : ''" :aria-pressed="live" title="ดูหน้าเว็บเปลี่ยนตามที่พิมพ์ ก่อนกดบันทึก" @click="live = !live">ตัวอย่างสด</button>
         <RouterLink :to="`/admin/trips/${b.trip.id}/preview`" target="_blank" class="btn btn-ghost min-h-9 px-3" title="เปิดตัวอย่างในแท็บใหม่">แท็บใหม่ ↗</RouterLink>
         <button class="btn btn-ghost min-h-9 px-3" title="ดาวน์โหลดทริปนี้เป็น JSON" @click="download">ส่งออก</button>
         <button v-if="b.trip.status === 'published'" class="btn btn-ghost min-h-9 px-3" @click="unpublish">ยกเลิกเผยแพร่</button>
-        <button class="btn min-h-9 px-4" :disabled="publishing || ed.state === 'conflict'" @click="publish">{{ publishing ? "กำลังเผยแพร่…" : b.trip.publishedAt ? "เผยแพร่ฉบับนี้" : "เผยแพร่" }}</button>
+        <button class="btn min-h-9 px-4" :disabled="publishing || ed.state === 'conflict'" title="ตรวจก่อนแล้วค่อยเผยแพร่" @click="publish">{{ publishing ? "กำลังเผยแพร่…" : b.trip.publishedAt ? "เผยแพร่ฉบับนี้" : "เผยแพร่" }}</button>
       </div>
     </div>
 
@@ -259,10 +332,15 @@ onBeforeRouteLeave(async () => {
 
       <!-- blocks -->
       <section v-if="day" class="min-w-0" aria-label="เนื้อหาของวัน">
-        <p v-if="drag" class="mb-1.5 text-xs text-forest" role="status">ปล่อยเพื่อวางตรงเส้นสีเขียว · ลากไปที่ปุ่ม Day เพื่อย้ายวัน · Esc ยกเลิก</p>
+        <!-- hints float above the page: anything in the flow here would shift the rows being targeted -->
+        <p v-if="uploading || fileOver || drag" class="pointer-events-none fixed bottom-6 left-1/2 z-50 max-w-[92vw] -translate-x-1/2 rounded-full bg-forest px-4 py-2 text-sm text-white shadow-lg" role="status">
+          <template v-if="uploading">กำลังอัปโหลด {{ uploading.done }}/{{ uploading.total }} ไฟล์…</template>
+          <template v-else-if="fileOver">{{ fileOver.overList ? "ปล่อยเพื่อวางรูปตรงเส้นสีเขียว" : "ลากมาบนรายการเนื้อหาเพื่อเลือกตำแหน่ง (ปล่อยตรงอื่น = ต่อจากส่วนที่เลือก)" }}</template>
+          <template v-else>ปล่อยเพื่อวางตรงเส้นสีเขียว · ลากไปที่ปุ่ม Day เพื่อย้ายวัน · Esc ยกเลิก</template>
+        </p>
         <ol ref="blockList" class="relative grid grid-cols-[minmax(0,1fr)] gap-1.5">
           <li
-            v-for="(x, i) in day.blocks" :key="x.id" data-row
+            v-for="(x, i) in day.blocks" :key="x.id" data-row :data-row-id="x.id"
             class="group flex min-w-0 cursor-grab items-stretch rounded-lg border bg-white"
             :class="[x.id === ed.selected.blockId ? 'border-forest ring-1 ring-forest' : 'border-[#ece6da]', x.type === 'event' ? 'mt-3 bg-[#f4f1ea]' : '', drag?.from === i ? 'pointer-events-none relative z-20 opacity-90 shadow-xl' : drag ? '' : 'transition']"
             :style="drag?.from === i ? { transform: `translateY(${drag.dy}px) rotate(-0.4deg)` } : undefined"
@@ -284,6 +362,7 @@ onBeforeRouteLeave(async () => {
             </span>
           </li>
           <div v-if="drag && drag.day === null" class="pointer-events-none absolute inset-x-0 z-10 h-1 rounded-full bg-forest" :style="{ top: `${drag.line}px` }" aria-hidden="true" />
+          <div v-if="fileOver && fileOver.line !== null" class="pointer-events-none absolute inset-x-0 z-10 h-1 rounded-full bg-forest" :style="{ top: `${fileOver.line}px` }" aria-hidden="true" />
         </ol>
         <p v-if="!day.blocks.length" class="rounded-lg border border-dashed border-rule p-6 text-center text-muted">วันนี้ยังว่าง — เริ่มจาก “ช่วงเวลา” แล้วเขียนต่อด้านล่าง</p>
         <div class="relative mt-2">
@@ -310,13 +389,15 @@ onBeforeRouteLeave(async () => {
 
       <!-- live preview, docked beside the story on wide screens -->
       <div v-if="docked" class="min-w-0 xl:sticky xl:top-32 xl:h-[calc(100dvh-9rem)]">
-        <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" />
+        <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" @pick="onPick" />
       </div>
     </div>
 
+    <PublishCheck ref="checkDlg" :issues="issues" :republish="!!b.trip.publishedAt" :busy="publishing" :day-label="dayLabel" @go="goTo" @publish="confirmPublish" />
+
     <!-- live preview as a side panel (narrower screens, and the other tabs) -->
     <div v-if="live && !docked" class="fixed bottom-2 right-2 top-[7.5rem] z-40 w-[min(440px,calc(100vw-1rem))] shadow-2xl">
-      <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" />
+      <LivePreview :bundle="b" :focus="previewFocus" @close="live = false" @pick="onPick" />
     </div>
   </main>
 </template>

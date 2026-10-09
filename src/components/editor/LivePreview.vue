@@ -8,7 +8,7 @@ import { useRouter } from "vue-router";
 import type { TripBundle } from "@/types/content";
 
 const props = defineProps<{ bundle: TripBundle; focus: string }>();
-defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: []; pick: [{ blockId?: string; where?: "trip" | "notes" }] }>();
 const router = useRouter();
 
 const DEVICES = { phone: { w: 390, label: "มือถือ" }, desktop: { w: 1280, label: "จอใหญ่" } } as const;
@@ -38,7 +38,9 @@ watch(slots, () => send(false));
 
 function onMessage(e: MessageEvent) {
   if (e.origin !== location.origin || e.source !== frame.value?.contentWindow) return;
-  if ((e.data as { type?: string })?.type === "journeys-preview-ready") { ready.value = true; send(true); }
+  const m = e.data as { type?: string; blockId?: string; where?: "trip" | "notes" };
+  if (m?.type === "journeys-preview-ready") { ready.value = true; send(true); }
+  else if (m?.type === "journeys-pick") emit("pick", { blockId: m.blockId, where: m.where });
 }
 let ro: ResizeObserver | null = null;
 onMounted(() => {
@@ -53,12 +55,12 @@ onBeforeUnmount(() => { removeEventListener("message", onMessage); ro?.disconnec
   <section class="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[#ece6da] bg-white" aria-label="ตัวอย่างสด">
     <div class="flex flex-wrap items-center gap-2 border-b border-[#ece6da] px-3 py-2 text-sm">
       <span class="font-medium">ตัวอย่างสด</span>
-      <span class="text-xs text-muted">เห็นแบบนี้หลังเผยแพร่</span>
+      <span class="text-xs text-muted">คลิกส่วนไหนเพื่อแก้ตรงนั้น</span>
       <div class="ml-auto flex gap-1" role="group" aria-label="ขนาดหน้าจอ">
         <button v-for="(d, k) in DEVICES" :key="k" type="button" class="chip border border-rule" :class="device === k ? 'bg-ink text-white' : 'bg-white'" :aria-pressed="device === k" @click="device = k">{{ d.label }}</button>
       </div>
       <label class="flex items-center gap-1 text-xs"><input v-model="slots" type="checkbox"> ช่องรอรูป</label>
-      <button type="button" class="rounded px-1.5 text-lg leading-none" aria-label="ปิดตัวอย่าง" @click="$emit('close')">×</button>
+      <button type="button" class="rounded px-1.5 text-lg leading-none" aria-label="ปิดตัวอย่าง" @click="emit('close')">×</button>
     </div>
     <div ref="box" class="relative min-h-0 flex-1 overflow-hidden bg-[#e9e4da]">
       <iframe
