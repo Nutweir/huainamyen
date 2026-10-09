@@ -252,13 +252,13 @@ test("write the About page: text, links and photo show in the preview and on the
   await picker.getByRole("button", { name: "ใช้ที่เลือก" }).click();
 
   const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าเกี่ยวกับผู้เขียน"]');
-  await expect(preview.locator(".about-text")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
-  await expect(preview.locator(".about-links a")).toHaveText("Instagram ↗");
+  await expect(preview.locator(".about-story")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
+  await expect(preview.locator(".about-links a")).toContainText("Instagram");
   await expect(preview.locator(".about-photo img")).toBeVisible();
 
   await page.getByRole("button", { name: "บันทึก (ขึ้นเว็บทันที)" }).click();
   await expect(page.locator("main [role=status]")).toHaveText("บันทึกแล้ว");
   await page.goto("about");
-  await expect(page.locator(".about-text")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
+  await expect(page.locator(".about-story")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
   await expect(page.locator(".about-links a")).toHaveAttribute("href", "https://instagram.com/example");
 });

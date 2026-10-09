@@ -521,7 +521,7 @@ body.diary .about-facts dd { margin: .1rem 0 0; font-size: .98rem; line-height: 
 body.diary .about-photo { position: relative; justify-self: center; width: min(78%, 21rem); margin: .5rem 0 0; padding: .7rem .7rem 0; background: var(--polaroid); box-shadow: 0 1px 2px rgb(0 0 0 / .1), 0 14px 32px -16px rgb(60 40 20 / .45); transform: rotate(2deg); }
 body.diary .about-photo::before { content: ""; position: absolute; z-index: 1; top: -12px; left: 50%; width: 42%; height: 24px; translate: -50% 0; rotate: -3deg; background: rgb(233 222 196 / .8); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
 body.diary .about-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
-body.diary .about-photo figcaption { text-align: center; padding: .6rem 0 .9rem; color: #5a4630; font-size: 1.05rem; }
+body.diary .about-photo figcaption { display: block; text-align: center; padding: .6rem 0 .9rem; color: #5a4630; font-size: 1.05rem; }
 @media (min-width: 820px) {
   body.diary .about-head { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 4rem; }
   body.diary .about-photo { justify-self: end; }
@@ -548,3 +548,4 @@ body.diary .about-arrow { color: var(--muted); font-size: .85em; }
 body.diary .about-latest { padding: 3rem 0 4rem; border-top: 1px solid var(--rule); }
 body.diary .about-latest-t { margin: 0; }
 body.diary .about-latest .shelf { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+body.diary .about-latest .shelf-year { display: none; }
