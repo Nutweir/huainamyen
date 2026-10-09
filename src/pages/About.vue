@@ -18,12 +18,13 @@ const { repo } = useBackend();
 const route = useRoute();
 const embed = route.query.embed !== undefined;
 const site = ref<SiteSettings | null>(null);
+let gotDraft = false;
 const trips = ref<TripSummary[]>([]);
 
 function onMessage(e: MessageEvent) {
   if (e.origin !== location.origin || e.source !== window.parent) return;
   const m = e.data as { type?: string; site?: string };
-  if (m?.type === "journeys-site-draft" && m.site) site.value = JSON.parse(m.site) as SiteSettings;
+  if (m?.type === "journeys-site-draft" && m.site) { gotDraft = true; site.value = JSON.parse(m.site) as SiteSettings; }
 }
 // in the preview, links stay put
 const stay = (e: MouseEvent) => { if ((e.target as HTMLElement).closest("a")) e.preventDefault(); };
@@ -33,7 +34,10 @@ onMounted(async () => {
     addEventListener("message", onMessage);
     addEventListener("click", stay, true);
     window.parent.postMessage({ type: "journeys-preview-ready" }, location.origin);
-  } else site.value = await repo.getSite();
+  }
+  // the saved page first (also when ?embed is opened on its own); an editor's draft replaces it
+  const saved = await repo.getSite().catch(() => null);
+  if (!gotDraft && saved) site.value = saved;
 });
 onBeforeUnmount(() => { removeEventListener("message", onMessage); removeEventListener("click", stay, true); });
 
