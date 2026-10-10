@@ -13,6 +13,8 @@ import { safeHref, sanitizeNotes } from "@/utils/sanitize";
 import { yearOf } from "@/utils/format";
 import { usePageMeta, siteUrl } from "@/composables/usePageMeta";
 import JourneyShelf from "@/components/diary/JourneyShelf.vue";
+import SocialIcon from "@/components/diary/SocialIcon.vue";
+import { detectPlatform, platformById } from "@/utils/social";
 
 const { repo } = useBackend();
 const route = useRoute();
@@ -50,15 +52,11 @@ const facts = computed(() => (site.value?.facts || []).filter(([k, v]) => k.trim
 const photo = computed(() => site.value?.photo || null);
 const photoUrl = computed(() => (photo.value ? repo.mediaUrl(photo.value, 1000) : ""));
 
-/** What the links point at, for a matching little icon. */
-const ICONS: [RegExp, string][] = [
-  [/instagram\.com/i, "instagram"], [/tiktok\.com/i, "tiktok"], [/facebook\.com|fb\.com/i, "facebook"],
-  [/youtube\.com|youtu\.be/i, "youtube"], [/^mailto:/i, "mail"], [/^tel:/i, "phone"], [/line\.me/i, "line"],
-];
+// each link with its platform's mark (older links: worked out from the address)
 const links = computed(() => (site.value?.links || [])
-  .map(l => ({ label: l.label.trim(), href: safeHref(l.url) }))
+  .map(l => ({ label: l.label.trim(), href: safeHref(l.url), platform: l.platform }))
   .filter(l => l.label && l.href)
-  .map(l => ({ ...l, icon: ICONS.find(([re]) => re.test(l.href))?.[1] || "link" })));
+  .map(l => ({ ...l, platform: (platformById(l.platform) || detectPlatform(l.href)).id })));
 
 // counted from what is published — never typed in
 const days = (a: string, b: string | null) => Math.max(1, Math.round((Date.parse(b || a) - Date.parse(a)) / 86400000) + 1);
@@ -109,16 +107,7 @@ usePageMeta(computed(() => ({ title: `เกี่ยวกับผู้เข
 
       <nav v-if="links.length" class="about-links" aria-label="ช่องทางติดตาม">
         <a v-for="l in links" :key="l.href" :href="l.href" target="_blank" rel="noopener" class="about-ticket">
-          <svg class="about-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <template v-if="l.icon === 'instagram'"><rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r=".9" class="dot" /></template>
-            <template v-else-if="l.icon === 'tiktok'"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5" /><path d="M14 4c.6 2.4 2.3 4 4.5 4.3" /></template>
-            <template v-else-if="l.icon === 'facebook'"><path d="M14.5 21v-7.5h2.5l.5-3h-3V8.7c0-.9.4-1.5 1.6-1.5H17.6V4.6c-.4-.1-1.4-.2-2.5-.2-2.4 0-3.8 1.4-3.8 3.9v2.2H9v3h2.3V21" /></template>
-            <template v-else-if="l.icon === 'youtube'"><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="M10 9.2v5.6l4.8-2.8z" class="dot" /></template>
-            <template v-else-if="l.icon === 'mail'"><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="m3.5 6.5 8.5 6.5 8.5-6.5" /></template>
-            <template v-else-if="l.icon === 'phone'"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z" /></template>
-            <template v-else-if="l.icon === 'line'"><path d="M12 4c-5 0-8.5 3-8.5 6.8 0 3.4 2.9 6.2 6.9 6.7l-.4 2.5 3.5-2.4c4.1-.4 7-3.3 7-6.8C20.5 7 17 4 12 4z" /></template>
-            <template v-else><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></template>
-          </svg>
+          <SocialIcon class="about-icon" :platform="l.platform" />
           <span>{{ l.label }}</span><span class="about-arrow" aria-hidden="true">↗</span>
         </a>
       </nav>

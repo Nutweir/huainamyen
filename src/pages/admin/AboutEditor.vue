@@ -3,7 +3,7 @@
  * เกี่ยวกับผู้เขียน: name, photo, a few paragraphs and links, with the real About page beside it.
  * Unlike trips there is no draft: saving puts it on the site straight away (the button says so).
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import type { MediaAsset, SiteSettings } from "@/types/content";
 import { useBackend } from "@/services";
@@ -12,6 +12,8 @@ import { clone } from "@/utils/format";
 import { PARAGRAPH_STYLES, safeHref, sanitizeInline } from "@/utils/sanitize";
 import RichText from "@/components/editor/RichText.vue";
 import MediaPicker from "@/components/admin/MediaPicker.vue";
+import SocialIcon from "@/components/diary/SocialIcon.vue";
+import { PLATFORMS, detectPlatform, platformById } from "@/utils/social";
 
 const { repo } = useBackend();
 const router = useRouter();
@@ -41,7 +43,30 @@ const toHtml = () => paragraphs.value
   .filter(p => p.h)
   .map(p => (p.cls ? `<p class="${p.cls}">${p.h}</p>` : `<p>${p.h}</p>`))
   .join("");
-const draft = computed<SiteSettings | null>(() => (site.value ? { ...site.value, aboutHtml: toHtml(), links: (site.value.links || []).filter(l => l.label.trim() || l.url.trim()) } : null));
+/*
+ * Links are edited as platform + username (or address); the URL is built from them.
+ * A row that can't make a usable URL is left out of the page and flagged in red here.
+ */
+interface LinkRow { key: number; platform: string; value: string; label: string }
+const rows = ref<LinkRow[]>([]);
+const plat = (r: LinkRow) => platformById(r.platform) || platformById("other")!;
+const urlOf = (r: LinkRow) => plat(r).toUrl(r.value);
+function toRow(l: { label: string; url: string; platform?: string }): LinkRow {
+  const p = platformById(l.platform) || detectPlatform(l.url);
+  const short = p.fromUrl(l.url);
+  // keep the saved address exactly when the short form wouldn't rebuild it
+  return { key: keys++, platform: p.id, value: p.toUrl(short) === l.url ? short : l.url, label: l.label.trim() === p.label ? "" : l.label };
+}
+const inputs = ref<HTMLInputElement[]>([]);
+async function addLink(platform: string) {
+  rows.value.push({ key: keys++, platform, value: "", label: "" });
+  await nextTick();
+  inputs.value[rows.value.length - 1]?.focus();
+}
+const draft = computed<SiteSettings | null>(() => (site.value ? {
+  ...site.value, aboutHtml: toHtml(),
+  links: rows.value.map(r => ({ label: r.label.trim() || plat(r).label, url: urlOf(r), platform: r.platform })).filter(l => l.url),
+} : null));
 const dirty = computed(() => !!draft.value && JSON.stringify(draft.value) !== saved.value);
 
 onMounted(async () => {
@@ -49,14 +74,15 @@ onMounted(async () => {
     const s = await repo.getSite();
     site.value = { ...clone(s), links: s.links?.length ? clone(s.links) : [], photo: s.photo || null, note: s.note || "", facts: s.facts ? clone(s.facts) : [], photoCaption: s.photoCaption || "" };
     paragraphs.value = toParagraphs(s.aboutHtml || "");
+    rows.value = (s.links || []).map(toRow);
     saved.value = JSON.stringify(draft.value);
   } catch (e) { toast((e as Error).message, true); }
 });
 
 async function save() {
   if (!draft.value) return;
-  const bad = (draft.value.links || []).find(l => l.url && !safeHref(l.url));
-  if (bad) { toast(`ลิงก์ “${bad.label || bad.url}” ต้องขึ้นต้นด้วย https://, mailto: หรือ tel:`, true); return; }
+  const bad = rows.value.find(r => r.value.trim() && !safeHref(urlOf(r)));
+  if (bad) { toast(`ลิงก์ ${plat(bad).label} “${bad.value}” ใช้ไม่ได้ — แก้หรือลบก่อนบันทึก`, true); return; }
   saving.value = true;
   try { await repo.saveSite(clone(draft.value)); saved.value = JSON.stringify(draft.value); toast("บันทึกแล้ว — หน้าเกี่ยวกับผู้เขียนเปลี่ยนแล้ว"); }
   catch (e) { toast((e as Error).message, true); }
@@ -146,12 +172,33 @@ onBeforeRouteLeave(() => !dirty.value || confirm("ยังไม่ได้บ
 
         <section class="card grid gap-3 p-4" aria-labelledby="ab-links">
           <h2 id="ab-links" class="font-display text-lg">ลิงก์</h2>
-          <div v-for="(l, i) in site.links" :key="i" class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto] items-end gap-2">
-            <label class="field"><span>ชื่อ</span><input v-model="l.label" class="input" placeholder="Instagram"></label>
-            <label class="field"><span>ลิงก์</span><input v-model="l.url" class="input" placeholder="https://… หรือ mailto:…" :aria-invalid="!!l.url && !safeHref(l.url)"></label>
-            <button type="button" class="btn btn-ghost min-h-[42px] px-3" :aria-label="`ลบลิงก์ ${l.label}`" @click="site.links!.splice(i, 1)">✕</button>
+          <p class="text-xs text-muted">เลือกช่องทาง แล้วพิมพ์แค่ชื่อผู้ใช้ — ระบบสร้างลิงก์ให้ (วางลิงก์เต็มก็ได้)</p>
+          <div v-for="(r, i) in rows" :key="r.key" class="grid gap-1.5 rounded-lg border border-rule p-2.5" :data-link="r.platform">
+            <div class="flex flex-wrap items-center gap-2">
+              <SocialIcon :platform="r.platform" class="h-7 w-7 shrink-0" />
+              <select v-model="r.platform" class="input w-auto min-w-[8.5rem]" :aria-label="`ช่องทางของลิงก์ที่ ${i + 1}`">
+                <option v-for="p in PLATFORMS" :key="p.id" :value="p.id">{{ p.label }}</option>
+              </select>
+              <div class="flex min-w-[12rem] flex-1 items-center overflow-hidden rounded-lg border bg-white focus-within:border-ink" :class="r.value.trim() && !urlOf(r) ? 'border-danger' : 'border-rule'">
+                <span class="whitespace-nowrap border-r border-rule bg-[#f6f2ea] px-2 py-2 text-xs text-muted">{{ plat(r).prefix }}</span>
+                <input :ref="el => { if (el) inputs[i] = el as HTMLInputElement }" v-model="r.value" class="min-w-0 flex-1 px-2 py-2 outline-none" :placeholder="plat(r).placeholder" :aria-label="`${plat(r).label} ของลิงก์ที่ ${i + 1}`" :aria-invalid="!!r.value.trim() && !urlOf(r)">
+              </div>
+              <button type="button" class="btn btn-ghost min-h-[40px] px-3" :aria-label="`ลบลิงก์ ${plat(r).label}`" @click="rows.splice(i, 1)">✕</button>
+            </div>
+            <label v-if="r.platform === 'website' || r.platform === 'other'" class="field"><span class="text-xs">ข้อความบนปุ่ม (ว่าง = “{{ plat(r).label }}”)</span><input v-model="r.label" class="input" maxlength="40" placeholder="เช่น บล็อกของฉัน"></label>
+            <p v-if="r.value.trim() && !urlOf(r)" class="text-xs text-danger" role="alert">
+              {{ r.platform === "email" ? "อีเมลไม่ถูกต้อง" : r.platform === "other" ? "ต้องขึ้นต้นด้วย https://, mailto: หรือ tel:" : `ลิงก์นี้ไม่ใช่ของ ${plat(r).label} — พิมพ์แค่ชื่อผู้ใช้ หรือวางลิงก์ของ ${plat(r).label}` }} · ยังไม่แสดงบนหน้าเว็บ
+            </p>
+            <p v-else-if="urlOf(r)" class="truncate text-xs text-muted">→ <a :href="urlOf(r)" target="_blank" rel="noopener" class="underline">{{ urlOf(r) }}</a></p>
           </div>
-          <button type="button" class="btn btn-ghost w-fit" @click="site.links!.push({ label: '', url: '' })">+ เพิ่มลิงก์</button>
+          <div class="grid gap-1.5">
+            <span class="text-xs text-muted">+ เพิ่มช่องทาง</span>
+            <div class="flex flex-wrap gap-1.5" role="group" aria-label="เพิ่มลิงก์">
+              <button v-for="p in PLATFORMS" :key="p.id" type="button" class="chip inline-flex items-center gap-1.5 border border-rule bg-white hover:border-ink" @click="addLink(p.id)">
+                <SocialIcon :platform="p.id" class="h-4 w-4" />{{ p.label }}
+              </button>
+            </div>
+          </div>
         </section>
       </div>
 

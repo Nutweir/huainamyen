@@ -214,8 +214,8 @@ export interface SiteSettings {
   author: string;
   /** About page photo — a copy of the asset, since readers can't read the media table. */
   photo?: MediaAsset | null;
-  /** Links on the About page (Instagram, e-mail…). */
-  links?: { label: string; url: string }[];
+  /** Links on the About page (Instagram, e-mail…); platform is an id from utils/social (older links have none). */
+  links?: { label: string; url: string; platform?: string }[];
   /** A short handwritten line under the name. */
   note?: string;
   /** Small facts beside it, e.g. ["Based in", "เชียงใหม่"]. */

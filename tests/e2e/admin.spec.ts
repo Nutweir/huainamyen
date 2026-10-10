@@ -254,9 +254,15 @@ test("write the About page: text, links and photo show in the preview and on the
   await style.getByRole("button", { name: "กึ่งกลาง" }).click();
   await style.getByRole("button", { name: "ใหญ่พิเศษ" }).click();
   await style.getByRole("button", { name: "ลายมือ" }).click();
-  await page.getByRole("button", { name: "+ เพิ่มลิงก์" }).click();
-  await page.getByPlaceholder("Instagram").fill("Instagram");
-  await page.getByPlaceholder("https://… หรือ mailto:…").fill("https://instagram.com/example");
+  // links: pick a platform, type the username; a bad one is flagged, not silently dropped
+  const add = page.getByRole("group", { name: "เพิ่มลิงก์" });
+  await add.getByRole("button", { name: "Instagram" }).click();
+  await page.keyboard.type("@example");
+  await expect(page.getByText("https://www.instagram.com/example")).toBeVisible();
+  await add.getByRole("button", { name: "อีเมล" }).click();
+  await page.keyboard.type("not-an-email");
+  await expect(page.getByRole("alert").filter({ hasText: "อีเมลไม่ถูกต้อง" })).toBeVisible();
+  await page.getByRole("button", { name: "ลบลิงก์ อีเมล" }).click();
   await page.getByRole("button", { name: "เลือกรูป" }).click();
   const picker = page.locator("dialog[open]");
   await picker.locator("ul button[aria-pressed]").first().click();
@@ -265,13 +271,14 @@ test("write the About page: text, links and photo show in the preview and on the
   const preview = page.frameLocator('iframe[title="ตัวอย่างหน้าเกี่ยวกับผู้เขียน"]');
   await expect(preview.locator(".about-story")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
   await expect(preview.locator(".about-links a")).toContainText("Instagram");
+  await expect(preview.locator(".about-links a svg")).toHaveCSS("color", "rgb(225, 48, 108)");
   await expect(preview.locator(".about-photo img")).toBeVisible();
 
   await page.getByRole("button", { name: "บันทึก (ขึ้นเว็บทันที)" }).click();
   await expect(page.locator("main [role=status]")).toHaveText("บันทึกแล้ว");
   await page.goto("about");
   await expect(page.locator(".about-story")).toContainText("สวัสดีครับ ผมชอบเดินทาง");
-  await expect(page.locator(".about-links a")).toHaveAttribute("href", "https://instagram.com/example");
+  await expect(page.locator(".about-links a")).toHaveAttribute("href", "https://www.instagram.com/example");
   const para = page.locator(".about-story p").first();
   await expect(para).toHaveClass("al-center sz-xl f-hand");
   await expect(para).toHaveCSS("text-align", "center");
