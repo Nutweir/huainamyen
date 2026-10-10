@@ -25,7 +25,7 @@ import { uploadFiles, useFileDrop } from "@/composables/useFileDrop";
 import { checkTrip, type Issue } from "@/services/publishCheck";
 import PublishCheck from "@/components/editor/PublishCheck.vue";
 import ChangeList from "@/components/editor/ChangeList.vue";
-import { diffTrip, type Change } from "@/services/diff";
+import { diffTrip, revertChange, type Change } from "@/services/diff";
 import { insertIndex, type Target } from "@/services/autoPlace";
 import AutoPlaceDialog from "@/components/editor/AutoPlaceDialog.vue";
 
@@ -219,6 +219,17 @@ function goTo(i: Issue | Change) {
   tab.value = "story";
   ed.selected = { day: i.where.day, blockId: i.where.blockId || null };
   revealRow(i.where.blockId);
+}
+/** "↶ ย้อนกลับ" on a change: just that part goes back to what readers see (one undo step). */
+function revert(c: Change) {
+  if (!b.value || !ed.published || !c.revert) return;
+  const r = c.revert, pub = ed.published;
+  ed.batch(() => revertChange(pub, b.value!, r));
+  const day = b.value.days[ed.selected.day];
+  if (ed.selected.blockId && !day?.blocks.some(x => x.id === ed.selected.blockId)) ed.selected.blockId = null;
+  changes.value = diffTrip(pub, b.value);
+  issues.value = checkTrip(b.value);
+  toast(`ย้อน “${c.what}” แล้ว — เปลี่ยนใจกด Ctrl+Z`);
 }
 const dayLabel = (d: number) => `Day ${pad2(b.value?.days[d]?.dayNumber || d + 1)}`;
 
@@ -484,13 +495,13 @@ onBeforeRouteLeave(async () => {
       <div class="max-h-[80dvh] overflow-auto p-5">
         <h2 id="diff-title" class="font-display text-xl">ต่างจากฉบับที่ผู้อ่านเห็นอยู่</h2>
         <p class="mt-1 text-sm text-muted">เผยแพร่ล่าสุด {{ b.trip.publishedAt ? new Date(b.trip.publishedAt).toLocaleString("th-TH") : "—" }} · คลิกรายการเพื่อไปที่จุดนั้น</p>
-        <ChangeList v-if="changes.length" class="mt-3" :changes="changes" @go="goTo" />
+        <ChangeList v-if="changes.length" class="mt-3" :changes="changes" @go="goTo" @revert="revert" />
         <p v-else class="mt-3 rounded-lg bg-[#e5efe6] px-3 py-2 text-sm text-forest">✓ ไม่มีอะไรเปลี่ยน — ฉบับนี้เหมือนที่ผู้อ่านเห็นอยู่</p>
       </div>
       <div class="flex justify-end border-t border-[#ece6da] p-4"><button class="btn btn-ghost" @click="diffDlg?.close()">ปิด</button></div>
     </dialog>
     <AutoPlaceDialog ref="placeDlg" :bundle="b" @apply="placeByTime" />
-    <PublishCheck ref="checkDlg" :issues="issues" :changes="changes" :republish="!!b.trip.publishedAt" :busy="publishing" :day-label="dayLabel" @go="goTo" @publish="confirmPublish" />
+    <PublishCheck ref="checkDlg" :issues="issues" :changes="changes" :republish="!!b.trip.publishedAt" :busy="publishing" :day-label="dayLabel" @go="goTo" @publish="confirmPublish" @revert="revert" />
 
     <!-- live preview as a side panel (narrower screens, and the other tabs) -->
     <div v-if="live && !docked" class="fixed bottom-2 right-2 top-[7.5rem] z-40 w-[min(440px,calc(100vw-1rem))] shadow-2xl">

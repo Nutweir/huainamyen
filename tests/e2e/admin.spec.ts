@@ -212,7 +212,13 @@ test("see what changed since publishing, and the library says where a photo is u
   await page.locator("[data-row]").nth(2).getByRole("button", { name: /^ลบ/ }).click();
   await page.getByRole("button", { name: "เทียบกับที่เผยแพร่" }).click();
   await expect(page.locator("dialog[open]")).toContainText("ลบย่อหน้า");
+  // put it back from the list: the paragraph returns to its place and nothing is left to compare
+  const rows = await page.locator("[data-row]").count();
+  await page.locator("dialog[open]").getByRole("button", { name: /^ย้อนกลับ: ลบย่อหน้า/ }).click();
+  await expect(page.locator("dialog[open]")).toContainText("ไม่มีอะไรเปลี่ยน");
+  await expect(page.locator("[data-row]")).toHaveCount(rows + 1);
   await page.locator("dialog[open]").getByRole("button", { name: "ปิด" }).click();
+  await page.locator("[data-row]").nth(2).getByRole("button", { name: /^ลบ/ }).click();
 
   await page.goto("admin/media");
   await page.locator("main ul li button").filter({ has: page.locator('img[alt*="น้องแพะ"]') }).first().click();
